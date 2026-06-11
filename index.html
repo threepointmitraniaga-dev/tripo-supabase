@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tripo ERP - SAK ETAP (Entitas Tanpa Akuntabilitas Publik) v7</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #f8fafc; color: #0f172a; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+        .animate-scaleIn { animation: scaleIn 0.15s ease-out; }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .level-0 { font-weight: 900; background: #f1f5f9; }
+        .level-1 { font-weight: 700; background: #f8fafc; }
+        .level-2 { font-weight: 500; }
+        .level-3 { font-weight: 400; color: #475569; }
+
+        /* ===== CLOUD TOAST ===== */
+        #cloud-toast {
+            position:fixed; bottom:1.2rem; right:1.2rem; z-index:99999;
+            background:#0f172a; color:#94a3b8; font-size:0.72rem; font-family:'Inter',monospace;
+            padding:0.5rem 1rem; border-radius:0.6rem; border:1px solid #1e293b;
+            box-shadow:0 4px 24px rgba(0,0,0,0.4); display:none;
+            align-items:center; gap:0.5rem; min-width:200px;
+        }
+        #cloud-toast.show { display:flex; animation:toastIn 0.3s ease; }
+        @keyframes toastIn { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+        #cloud-toast .cdot { width:7px;height:7px;border-radius:50%;background:#3ecf8e;animation:cpulse 1.2s infinite; }
+        @keyframes cpulse { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+
+        /* ===== SETUP MODAL ===== */
+        #setup-modal {
+            position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.88);
+            align-items:center;justify-content:center;padding:1rem;
+            display:none;
+        }
+        #setup-modal.show { display:flex !important; }
+        /* Pastikan modal selalu di atas segalanya */
+        #setup-modal * { box-sizing:border-box; }
+        .setup-card {
+            background:#1e293b;border:1px solid #334155;border-radius:1.2rem;
+            padding:2rem;width:100%;max-width:500px;color:#f1f5f9;
+            box-shadow:0 20px 60px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto;
+        }
+        .setup-input {
+            width:100%;padding:0.65rem 0.9rem;background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;
+            color:#f1f5f9;font-size:0.8rem;outline:none;box-sizing:border-box;
+            font-family:monospace;transition:border-color 0.2s;
+        }
+        .setup-input:focus { border-color:#3ecf8e; }
+
+        /* ===== LOGIN PAGE STYLES (TAMBAHAN - TIDAK MENGUBAH KODE ASLI) ===== */
+        #login-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+        #login-overlay.hide {
+            animation: loginFadeOut 0.5s ease forwards;
+        }
+        @keyframes loginFadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to   { opacity: 0; transform: scale(1.03); pointer-events: none; }
+        }
+        .login-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1.5rem;
+            padding: 2.5rem 2rem;
+            width: 100%; max-width: 400px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            animation: loginCardIn 0.5s ease;
+        }
+        @keyframes loginCardIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .login-input {
+            width: 100%; padding: 0.65rem 1rem;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 0.6rem; color: #f1f5f9;
+            font-size: 0.875rem; outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            box-sizing: border-box;
+        }
+        .login-input::placeholder { color: #64748b; }
+        .login-input:focus {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.08);
+        }
+        .login-btn {
+            width: 100%; padding: 0.7rem;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white; font-weight: 700; font-size: 0.875rem;
+            border: none; border-radius: 0.6rem; cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            letter-spacing: 0.02em;
+        }
+        .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .login-btn:active { transform: translateY(0); }
+        .login-error {
+            color: #f87171; font-size: 0.78rem;
+            text-align: center; min-height: 1.2rem;
+        }
+        /* ===== END LOGIN PAGE STYLES ===== */
+    </style>
+</head>
+<body class="font-sans antialiased text-xs md:text-sm bg-slate-50 text-slate-900" x-data="erpApp()">
+
+<!-- ===== SUPABASE SETUP MODAL ===== -->
+<div id="setup-modal">
+  <div class="setup-card">
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="width:54px;height:54px;border-radius:1rem;background:linear-gradient(135deg,#3ecf8e,#1a9e6e);display:inline-flex;align-items:center;justify-content:center;margin-bottom:0.6rem;box-shadow:0 8px 24px rgba(62,207,142,0.35);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="display:block;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="font-weight:800;font-size:1.15rem;color:#f1f5f9;">Konfigurasi Supabase</div>
+      <div style="color:#64748b;font-size:0.72rem;margin-top:0.25rem;">Database PostgreSQL gratis — unlimited requests</div>
+    </div>
+
+    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:0.7rem;padding:0.9rem;margin-bottom:1.3rem;font-size:0.71rem;color:#94a3b8;line-height:1.9;">
+      <strong style="color:#3ecf8e;">Cara mendapatkan URL & API Key:</strong><br>
+      1. Buka <a href="https://supabase.com/dashboard" target="_blank" style="color:#3ecf8e;">supabase.com/dashboard</a> → pilih project Anda<br>
+      2. Klik <strong style="color:#f1f5f9;">Settings</strong> (ikon gear) → pilih <strong style="color:#f1f5f9;">API</strong><br>
+      3. Copy <strong style="color:#f1f5f9;">Project URL</strong> dan <strong style="color:#f1f5f9;">anon public</strong> key
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.9rem;">
+      <div>
+        <label style="display:block;color:#94a3b8;font-size:0.7rem;font-weight:700;margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.05em;">Project URL</label>
+        <input class="setup-input" id="sb-url" placeholder="https://abcdefghij.supabase.co" />
+      </div>
+      <div>
+        <label style="display:block;color:#94a3b8;font-size:0.7rem;font-weight:700;margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.05em;">Anon Public Key</label>
+        <input class="setup-input" id="sb-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp..." />
+        <div style="color:#475569;font-size:0.68rem;margin-top:0.3rem;">Gunakan key "anon public", bukan "service_role"</div>
+      </div>
+
+      <div id="setup-error" style="color:#f87171;font-size:0.73rem;min-height:1rem;font-weight:500;"></div>
+
+      <button onclick="saveSupabaseConfig()" style="width:100%;padding:0.75rem;background:linear-gradient(135deg,#3ecf8e,#1a9e6e);color:white;font-weight:700;font-size:0.85rem;border:none;border-radius:0.65rem;cursor:pointer;box-shadow:0 4px 16px rgba(62,207,142,0.3);margin-top:0.2rem;">
+        🚀 Hubungkan ke Supabase
+      </button>
+      <button onclick="skipCloudSetup()" style="width:100%;padding:0.5rem;background:transparent;color:#475569;font-size:0.72rem;border:1px solid #1e293b;border-radius:0.5rem;cursor:pointer;">
+        Lewati — Gunakan Mode Lokal Saja
+      </button>
+    </div>
+  </div>
+</div>
+<div id="cloud-toast"><span class="cdot"></span><span id="cloud-toast-msg">Menyinkronkan...</span></div>
+<!-- ===== END SUPABASE SETUP MODAL ===== -->
+
+<!-- ===== LOGIN OVERLAY (TAMBAHAN - TIDAK MENGUBAH KODE ASLI) ===== -->
+<div id="login-overlay">
+    <div class="login-card">
+        <!-- Logo -->
+        <div style="text-align:center; margin-bottom:1.8rem;">
+            <div style="width:56px;height:56px;border-radius:1rem;background:linear-gradient(135deg,#6366f1,#4f46e5);display:inline-flex;align-items:center;justify-content:center;margin-bottom:0.8rem;box-shadow:0 8px 24px rgba(99,102,241,0.4);">
+                <span style="color:white;font-weight:900;font-size:1.1rem;">TP</span>
+            </div>
+            <div style="color:#f1f5f9;font-weight:800;font-size:1.3rem;letter-spacing:-0.01em;">Tripo ERP</div>
+            <div style="color:#64748b;font-size:0.75rem;margin-top:0.2rem;">Ledger Suite v7.0 · SAK ETAP</div>
+        </div>
+
+        <!-- Form -->
+        <div style="display:flex;flex-direction:column;gap:0.9rem;">
+            <div>
+                <label style="display:block;color:#94a3b8;font-size:0.75rem;font-weight:600;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Username</label>
+                <input id="login-user" class="login-input" type="text" placeholder="Masukkan username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <div>
+                <label style="display:block;color:#94a3b8;font-size:0.75rem;font-weight:600;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">Password</label>
+                <div style="position:relative;">
+                    <input id="login-pass" class="login-input" type="password" placeholder="Masukkan password" autocomplete="current-password" style="padding-right:2.8rem;" onkeydown="if(event.key==='Enter')doLogin()">
+                    <button onclick="toggleLoginPass()" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748b;font-size:1rem;padding:0;" title="Tampilkan/sembunyikan">👁</button>
+                </div>
+            </div>
+            <div id="login-error" class="login-error"></div>
+            <button class="login-btn" onclick="doLogin()">🔐 Masuk ke Sistem</button>
+        </div>
+
+        <!-- Footer hint -->
+        <div style="margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
+            <span style="color:#334155;font-size:0.7rem;">Default: &nbsp;</span>
+            <code style="color:#6366f1;font-size:0.7rem;background:rgba(99,102,241,0.1);padding:0.15rem 0.5rem;border-radius:0.3rem;">admin</code>
+            <span style="color:#334155;font-size:0.7rem;"> / </span>
+            <code style="color:#6366f1;font-size:0.7rem;background:rgba(99,102,241,0.1);padding:0.15rem 0.5rem;border-radius:0.3rem;">tripo2024</code>
+        </div>
+        <div id="login-cloud-status" style="margin-top:0.8rem;text-align:center;font-size:0.68rem;color:#64748b;">⏳ Memeriksa koneksi...</div>
+        <!-- Tombol setup cloud selalu tampil di login -->
+        <div style="margin-top:0.8rem;text-align:center;">
+            <button onclick="document.getElementById('setup-modal').classList.add('show')" style="background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);color:#3ecf8e;font-size:0.68rem;font-weight:700;padding:0.4rem 1rem;border-radius:0.5rem;cursor:pointer;transition:all 0.2s;">
+                ⚙️ Konfigurasi Supabase Cloud
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== TRIPO ERP — SUPABASE CLOUD SYNC + LOGIN LOGIC =====
+(function () {
+    var DEFAULT_USERS = { admin: 'tripo2024', manajer: 'manajer123', staff: 'staff123' };
+    var SESSION_KEY   = 'tripo_logged_in';
+    var SB_CFG_KEY    = 'tripo_sb_config';
+    var CLOUD_MODE    = 'tripo_cloud_mode'; // 'supabase' | 'local'
+    var TABLE         = 'tripo_data';
+    var ROW_ID        = 'main';
+
+    // ── HELPERS ──────────────────────────────────────────────────
+    function showToast(msg, ms) {
+        var t = document.getElementById('cloud-toast');
+        var m = document.getElementById('cloud-toast-msg');
+        if (!t) return;
+        m.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._tmr);
+        t._tmr = setTimeout(function () { t.classList.remove('show'); }, ms || 2500);
+    }
+
+    function getSbCfg() {
+        var s = localStorage.getItem(SB_CFG_KEY);
+        return s ? JSON.parse(s) : null;
+    }
+
+    function sbHeaders(cfg) {
+        cfg = cfg || getSbCfg();
+        return {
+            'Content-Type' : 'application/json',
+            'apikey'       : cfg.anonKey,
+            'Authorization': 'Bearer ' + cfg.anonKey,
+            'Prefer'       : 'return=representation'
+        };
+    }
+
+    function sbUrl(cfg) {
+        cfg = cfg || getSbCfg();
+        return cfg.url.replace(/\/$/, '') + '/rest/v1/' + TABLE + '?id=eq.' + ROW_ID;
+    }
+
+    // ── CLOUD PUSH (UPSERT seluruh data) ────────────────────────
+    window.cloudPush = function (data) {
+        var cfg = getSbCfg();
+        if (!cfg || localStorage.getItem(CLOUD_MODE) !== 'supabase') return Promise.resolve(false);
+        showToast('🟢 Menyimpan ke Supabase...', 3500);
+        var payload = {
+            id             : ROW_ID,
+            transactions   : data.transactions   || [],
+            coa            : data.coa            || null,
+            fixed_assets   : data.fixedAssets    || [],
+            closed_periods : data.closedPeriods  || [],
+            app_name       : data.appName        || 'Tripo ERP System',
+            users          : data.users          || {}
+        };
+        return fetch(cfg.url.replace(/\/$/, '') + '/rest/v1/' + TABLE, {
+            method : 'POST',
+            headers: Object.assign({}, sbHeaders(cfg), { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+            body   : JSON.stringify(payload)
+        }).then(function (r) {
+            if (r.ok) { showToast('✅ Tersimpan di Supabase', 2000); return true; }
+            return r.text().then(function(t){ console.error('Supabase push error:', t); showToast('⚠️ Gagal simpan Supabase', 2500); return false; });
+        }).catch(function (e) {
+            console.error(e);
+            showToast('⚠️ Tidak dapat terhubung', 2500);
+            return false;
+        });
+    };
+
+    // ── CLOUD PULL (SELECT lalu merge ke localStorage) ───────────
+    window.cloudPull = function (cb) {
+        var cfg = getSbCfg();
+        if (!cfg || localStorage.getItem(CLOUD_MODE) !== 'supabase') { if (cb) cb(false); return; }
+        fetch(sbUrl(cfg), { headers: sbHeaders(cfg) })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (rows) {
+                if (!rows || rows.length === 0) { if (cb) cb(false); return; }
+                var d = rows[0];
+                if (d.transactions)    localStorage.setItem('tripo_transactions',   JSON.stringify(d.transactions));
+                if (d.coa)             localStorage.setItem('tripo_custom_coa',     JSON.stringify(d.coa));
+                if (d.fixed_assets)    localStorage.setItem('tripo_fixed_assets',   JSON.stringify(d.fixed_assets));
+                if (d.closed_periods)  localStorage.setItem('tripo_closed_periods', JSON.stringify(d.closed_periods));
+                if (d.app_name)        localStorage.setItem('tripo_app_name',        d.app_name);
+                if (d.users && Object.keys(d.users).length) localStorage.setItem('tripo_users', JSON.stringify(d.users));
+                if (cb) cb(true);
+            })
+            .catch(function () { if (cb) cb(false); });
+    };
+
+    // ── HELPER: kumpulkan semua data untuk push ──────────────────
+    window._getTripoDataForCloud = function () {
+        var stored = localStorage.getItem('tripo_users');
+        return {
+            transactions : JSON.parse(localStorage.getItem('tripo_transactions')   || '[]'),
+            coa          : JSON.parse(localStorage.getItem('tripo_custom_coa')     || 'null'),
+            fixedAssets  : JSON.parse(localStorage.getItem('tripo_fixed_assets')   || '[]'),
+            closedPeriods: JSON.parse(localStorage.getItem('tripo_closed_periods') || '[]'),
+            appName      : localStorage.getItem('tripo_app_name') || 'Tripo ERP System',
+            users        : stored ? JSON.parse(stored) : {}
+        };
+    };
+
+    // ── SETUP MODAL ──────────────────────────────────────────────
+    window.saveSupabaseConfig = function () {
+        var url = (document.getElementById('sb-url').value || '').trim();
+        var key = (document.getElementById('sb-key').value || '').trim();
+        var err = document.getElementById('setup-error');
+        err.textContent = '';
+
+        if (!url || !key) { err.textContent = '⚠️ Project URL dan Anon Key wajib diisi.'; return; }
+        if (!url.includes('supabase.co')) { err.textContent = '⚠️ URL tidak valid. Format: https://xxxxx.supabase.co'; return; }
+
+        showToast('⏳ Menguji koneksi Supabase...', 5000);
+        var testUrl = url.replace(/\/$/, '') + '/rest/v1/' + TABLE + '?id=eq.' + ROW_ID;
+        fetch(testUrl, {
+            headers: {
+                'apikey'       : key,
+                'Authorization': 'Bearer ' + key
+            }
+        }).then(function (r) {
+            if (r.status === 401 || r.status === 403) {
+                err.textContent = '❌ API Key tidak valid atau RLS aktif. Pastikan anon key benar dan RLS dimatikan.';
+                showToast('❌ Autentikasi gagal', 3000); return;
+            }
+            if (!r.ok && r.status !== 200 && r.status !== 406) {
+                err.textContent = '❌ Tabel belum dibuat. Jalankan SQL setup terlebih dahulu di Supabase.';
+                showToast('❌ Tabel tidak ditemukan', 3000); return;
+            }
+            var cfg = { url: url, anonKey: key };
+            localStorage.setItem(SB_CFG_KEY, JSON.stringify(cfg));
+            localStorage.setItem(CLOUD_MODE, 'supabase');
+            document.getElementById('setup-modal').classList.remove('show');
+            showToast('🟢 Supabase terhubung!', 2500);
+            cloudPull(function (ok) {
+                updateSidebarStatus();
+                showLoginUI(ok);
+                if (!ok) {
+                    // Database kosong — inisialisasi dengan data lokal
+                    var d = window._getTripoDataForCloud();
+                    window.cloudPush(d);
+                    showToast('✅ Database diinisialisasi', 2500);
+                }
+            });
+        }).catch(function () {
+            err.textContent = '❌ Tidak dapat terhubung. Periksa URL dan koneksi internet.';
+            showToast('❌ Koneksi gagal', 2500);
+        });
+    };
+
+    window.skipCloudSetup = function () {
+        localStorage.setItem(CLOUD_MODE, 'local');
+        document.getElementById('setup-modal').classList.remove('show');
+        updateSidebarStatus();
+        showLoginUI(false);
+    };
+
+    window.resetCloudConfig = function () {
+        if (!confirm('Reset konfigurasi Supabase? Perlu setup ulang untuk cloud sync.')) return;
+        localStorage.removeItem(SB_CFG_KEY);
+        localStorage.removeItem(CLOUD_MODE);
+        alert('Konfigurasi direset. Halaman akan dimuat ulang.');
+        window.location.reload();
+    };
+
+    // ── UPDATE STATUS BAR SIDEBAR ────────────────────────────────
+    window.updateSidebarStatus = function () {
+        var el = document.getElementById('sidebar-cloud-status');
+        if (!el) return;
+        var mode = localStorage.getItem(CLOUD_MODE);
+        if (mode === 'supabase') {
+            el.innerHTML = '<span>🟢 Supabase Sync: Aktif</span><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-md shadow-emerald-500/50"></span>';
+        } else {
+            el.innerHTML = '<span>💾 Mode Lokal</span><span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>';
+        }
+    };
+
+    function showLoginUI(pulled) {
+        var mode = localStorage.getItem(CLOUD_MODE);
+        var el   = document.getElementById('login-cloud-status');
+        if (el) {
+            if (mode === 'supabase') {
+                el.style.color   = '#3ecf8e';
+                el.textContent   = pulled ? '🟢 Supabase Aktif — Data terbaru sudah dimuat' : '🟢 Supabase Aktif — Database siap digunakan';
+            } else {
+                el.style.color   = '#f59e0b';
+                el.textContent   = '💾 Mode Lokal — Data hanya tersimpan di perangkat ini';
+            }
+        }
+        if (sessionStorage.getItem(SESSION_KEY) === '1') {
+            var ov = document.getElementById('login-overlay');
+            if (ov) ov.style.display = 'none';
+        }
+    }
+
+    // ── INIT ─────────────────────────────────────────────────────
+    function runInit() {
+        var mode = localStorage.getItem(CLOUD_MODE);
+        var modal = document.getElementById('setup-modal');
+        if (!modal) {
+            // DOM belum siap, coba lagi
+            setTimeout(runInit, 50);
+            return;
+        }
+        if (!mode) {
+            modal.classList.add('show');
+        } else if (mode === 'supabase') {
+            cloudPull(function (ok) {
+                updateSidebarStatus();
+                showLoginUI(ok);
+                if (!ok) showToast('⚠️ Supabase tidak terjangkau, pakai data lokal', 3000);
+            });
+        } else {
+            updateSidebarStatus();
+            showLoginUI(false);
+        }
+        if (sessionStorage.getItem(SESSION_KEY) === '1') {
+            var ov = document.getElementById('login-overlay');
+            if (ov) ov.style.display = 'none';
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runInit);
+    } else {
+        runInit();
+    }
+
+    // ── LOGIN ────────────────────────────────────────────────────
+    window.doLogin = function () {
+        var u   = (document.getElementById('login-user').value || '').trim();
+        var p   = document.getElementById('login-pass').value || '';
+        var err = document.getElementById('login-error');
+        err.textContent = '';
+        if (!u || !p) { err.textContent = '⚠️ Username dan password wajib diisi.'; return; }
+
+        var stored   = localStorage.getItem('tripo_users');
+        var extra    = stored ? JSON.parse(stored) : {};
+        var allUsers = Object.assign({}, DEFAULT_USERS, extra);
+
+        if (allUsers[u] && allUsers[u] === p) {
+            sessionStorage.setItem(SESSION_KEY, '1');
+            sessionStorage.setItem('tripo_active_user', u);
+            var ov = document.getElementById('login-overlay');
+            ov.classList.add('hide');
+            setTimeout(function () { ov.style.display = 'none'; }, 500);
+            if (localStorage.getItem(CLOUD_MODE) === 'supabase') {
+                cloudPull(function (ok) { if (ok) showToast('🟢 Data terbaru dimuat dari Supabase', 2000); });
+            }
+        } else {
+            err.textContent = '❌ Username atau password salah!';
+            document.getElementById('login-pass').value = '';
+            document.getElementById('login-pass').focus();
+            var card = document.querySelector('.login-card');
+            if (card) {
+                card.style.transform = 'translateX(-8px)';
+                setTimeout(function () { card.style.transform = 'translateX(8px)'; }, 80);
+                setTimeout(function () { card.style.transform = 'translateX(-5px)'; }, 160);
+                setTimeout(function () { card.style.transform = 'translateX(0)'; }, 240);
+            }
+        }
+    };
+
+    window.toggleLoginPass = function () {
+        var inp = document.getElementById('login-pass');
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+    };
+
+    // ── LOGOUT ───────────────────────────────────────────────────
+    window.doLogout = function () {
+        if (!confirm('Yakin ingin keluar dari sistem?')) return;
+        sessionStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem('tripo_active_user');
+        window.location.reload();
+    };
+
+    // ── GANTI USERNAME ────────────────────────────────────────────
+    window.changeUsername = function () {
+        var newU  = (document.getElementById('cu-new').value || '').trim();
+        var passV = document.getElementById('cu-pass').value || '';
+        var msg   = document.getElementById('cu-msg');
+        var me    = sessionStorage.getItem('tripo_active_user');
+        if (!me) { msg.style.color = '#f87171'; msg.textContent = '❌ Tidak ada sesi aktif.'; return; }
+
+        var stored   = localStorage.getItem('tripo_users');
+        var extra    = stored ? JSON.parse(stored) : {};
+        var allUsers = Object.assign({}, DEFAULT_USERS, extra);
+
+        if (!newU || !passV)          { msg.style.color = '#f87171'; msg.textContent = '⚠️ Semua field wajib diisi.'; return; }
+        if (allUsers[me] !== passV)   { msg.style.color = '#f87171'; msg.textContent = '❌ Password tidak sesuai.'; return; }
+        if (newU === me)              { msg.style.color = '#f87171'; msg.textContent = '⚠️ Username baru sama dengan yang lama.'; return; }
+        if (allUsers[newU])           { msg.style.color = '#f87171'; msg.textContent = '❌ Username sudah digunakan.'; return; }
+        if (newU.length < 3)          { msg.style.color = '#f87171'; msg.textContent = '⚠️ Minimal 3 karakter.'; return; }
+
+        var upd = Object.assign({}, extra);
+        upd[newU] = allUsers[me];
+        delete upd[me];
+        Object.keys(DEFAULT_USERS).forEach(function (k) {
+            if (upd[k] === DEFAULT_USERS[k] && k !== newU) delete upd[k];
+        });
+        localStorage.setItem('tripo_users', JSON.stringify(upd));
+
+        var d = window._getTripoDataForCloud(); d.users = upd;
+        window.cloudPush && window.cloudPush(d);
+
+        sessionStorage.setItem('tripo_active_user', newU);
+        var uEl = document.getElementById('header-username');
+        if (uEl) uEl.textContent = newU;
+        document.getElementById('cu-new').value = '';
+        document.getElementById('cu-pass').value = '';
+        msg.style.color = '#22c55e';
+        msg.textContent = '✅ Username berhasil diubah menjadi "' + newU + '"!';
+        setTimeout(function () { msg.textContent = ''; }, 4000);
+    };
+
+    // ── GANTI PASSWORD ────────────────────────────────────────────
+    window.changePassword = function () {
+        var oldV = document.getElementById('cp-old').value || '';
+        var newV = document.getElementById('cp-new').value || '';
+        var conV = document.getElementById('cp-confirm').value || '';
+        var msg  = document.getElementById('cp-msg');
+        var me   = sessionStorage.getItem('tripo_active_user');
+        if (!me) { msg.style.color = '#f87171'; msg.textContent = '❌ Tidak ada sesi aktif.'; return; }
+
+        var stored   = localStorage.getItem('tripo_users');
+        var extra    = stored ? JSON.parse(stored) : {};
+        var allUsers = Object.assign({}, DEFAULT_USERS, extra);
+
+        if (!oldV || !newV || !conV)  { msg.style.color = '#f87171'; msg.textContent = '⚠️ Semua field wajib diisi.'; return; }
+        if (allUsers[me] !== oldV)    { msg.style.color = '#f87171'; msg.textContent = '❌ Password lama tidak sesuai.'; return; }
+        if (newV.length < 6)          { msg.style.color = '#f87171'; msg.textContent = '⚠️ Minimal 6 karakter.'; return; }
+        if (newV !== conV)            { msg.style.color = '#f87171'; msg.textContent = '❌ Konfirmasi tidak cocok.'; return; }
+
+        var upd = Object.assign({}, extra);
+        upd[me] = newV;
+        localStorage.setItem('tripo_users', JSON.stringify(upd));
+
+        var d = window._getTripoDataForCloud(); d.users = upd;
+        window.cloudPush && window.cloudPush(d);
+
+        document.getElementById('cp-old').value = '';
+        document.getElementById('cp-new').value = '';
+        document.getElementById('cp-confirm').value = '';
+        msg.style.color = '#22c55e';
+        msg.textContent = '✅ Password berhasil diubah!';
+        setTimeout(function () { msg.textContent = ''; }, 4000);
+    };
+
+})();
+// ===== END SUPABASE + LOGIN LOGIC =====
+</script>
+<!-- ===== END LOGIN OVERLAY ===== -->
+
+    <div class="flex h-screen overflow-hidden" x-data="{ mobileSidebarOpen: false }">
+        
+        <div :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" 
+             class="fixed inset-y-0 left-0 z-40 w-72 bg-slate-950 text-slate-300 flex flex-col shadow-2xl border-r border-slate-800 shrink-0 no-print transition-transform duration-300 ease-in-out lg:static lg:translate-x-0">
+            
+            <div class="p-5 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800 flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-md">
+                            <span class="text-white font-black text-sm">TP</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-sm tracking-wide text-white" x-text="appName"></span>
+                            <span class="text-[10px] text-slate-400 font-medium tracking-tight">Ledger Suite v7.0 (SAK ETAP)</span>
+                        </div>
+                    </div>
+                    <button @click="mobileSidebarOpen = false" class="text-slate-400 hover:text-white lg:hidden text-lg p-1">✕</button>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-5 overflow-y-auto">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Core Dashboard</p>
+                    <div class="space-y-1">
+                        <button @click="currentTab = 'dashboard'; mobileSidebarOpen = false" :class="currentTab === 'dashboard' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">📊</span> Ringkasan Eksekutif
+                        </button>
+                        <button @click="currentTab = 'coa'; mobileSidebarOpen = false" :class="currentTab === 'coa' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">🗂️</span> Bagan Akun (COA)
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Transaksi Jurnal</p>
+                    <div class="space-y-1">
+                        <button @click="currentTab = 'jurnal_input'; mobileSidebarOpen = false" :class="currentTab === 'jurnal_input' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">📝</span> Input Jurnal Voucher
+                        </button>
+                        <button @click="currentTab = 'jurnal_riwayat'; mobileSidebarOpen = false" :class="currentTab === 'jurnal_riwayat' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">📖</span> Riwayat & Rincian Log
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Buku Besar & Saldo</p>
+                    <div class="space-y-1">
+                        <button @click="currentTab = 'buku_besar'; mobileSidebarOpen = false" :class="currentTab === 'buku_besar' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">🔍</span> Buku Besar (GL)
+                        </button>
+                        <button @click="currentTab = 'trial_balance'; mobileSidebarOpen = false" :class="currentTab === 'trial_balance' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">⚖️</span> Neraca Saldo Lajur
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Laporan Keuangan Standar</p>
+                    <div class="space-y-1">
+                        <button @click="currentTab = 'laporan_labarugi'; mobileSidebarOpen = false" :class="currentTab === 'laporan_labarugi' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">📈</span> Laporan Laba Rugi
+                        </button>
+                        <button @click="currentTab = 'laporan_neraca'; mobileSidebarOpen = false" :class="currentTab === 'laporan_neraca' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">🏛️</span> Lap. Posisi Keuangan
+                        </button>
+                        <button @click="currentTab = 'laporan_aruskas'; mobileSidebarOpen = false" :class="currentTab === 'laporan_aruskas' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">💸</span> Laporan Arus Kas
+                        </button>
+                        <button @click="currentTab = 'laporan_ekuitas'; mobileSidebarOpen = false" :class="currentTab === 'laporan_ekuitas' ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">🔄</span> Perubahan Ekuitas
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Aset Tetap</p>
+                    <div class="space-y-1">
+                        <button @click="currentTab = 'aset_tetap'; mobileSidebarOpen = false" :class="currentTab === 'aset_tetap' ? 'bg-teal-600 text-white font-semibold shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">🏭</span> Daftar & Penyusutan Aset
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Periode & Tutup Buku</p>
+                    <div class="space-y-1">
+                        <button @click="currentTab = 'tutup_buku'; mobileSidebarOpen = false" :class="currentTab === 'tutup_buku' ? 'bg-orange-600 text-white font-semibold shadow-md shadow-orange-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                            <span class="text-base opacity-80">📅</span> Tutup Buku Bulanan/Tahunan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase px-3 mb-2 tracking-widest">Sistem</p>
+                    <button @click="currentTab = 'setting'; mobileSidebarOpen = false" :class="currentTab === 'setting' ? 'bg-amber-600 text-white font-semibold shadow-md shadow-amber-600/20' : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'" class="w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs">
+                        <span class="text-base opacity-80">⚙️</span> Pengaturan Aplikasi
+                    </button>
+                    <button onclick="doLogout()" class="mt-1 w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 transition duration-150 text-xs hover:bg-rose-900/40 text-rose-400 hover:text-rose-300">
+                        <span class="text-base opacity-80">🚪</span> Keluar (Logout)
+                    </button>
+                </div>
+            </nav>
+            
+            <div id="sidebar-cloud-status" class="p-4 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between items-center font-mono">
+                <span>💾 Mode Lokal</span>
+                <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+            </div>
+        </div>
+
+        <div x-show="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-slate-900/40 z-30 lg:hidden" x-cloak></div>
+
+        <div class="flex-1 flex flex-col overflow-hidden w-full">
+            <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 shadow-sm no-print">
+                <div class="flex items-center gap-3 w-full xl:w-auto">
+                    <button @click="mobileSidebarOpen = true" class="p-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100 lg:hidden focus:outline-none">
+                        <span class="text-base font-bold">☰</span>
+                    </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-sm md:text-base font-bold text-slate-800 uppercase tracking-tight" x-text="currentTab.replace(/_/g, ' ')"></h1>
+                        <span class="bg-teal-50 border border-teal-100 text-teal-700 text-[10px] md:text-xs rounded-full px-2.5 py-0.5 font-semibold">SAK ETAP (Entitas Tanpa Akuntabilitas Publik)</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 ml-auto no-print">
+                    <span class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] rounded-full px-2.5 py-1 font-bold hidden sm:inline">🟢 Supabase</span>
+                    <span class="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] rounded-full px-2.5 py-1 font-bold hidden sm:inline">👤 <span id="header-username"></span></span>
+                    <button onclick="doLogout()" class="bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 text-[10px] font-bold px-3 py-1.5 rounded-full transition">🚪 Logout</button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full xl:w-auto">
+                    <label class="flex items-center justify-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-100 transition duration-150">
+                        <input type="checkbox" x-model="hideZeroBalances" class="rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 w-4 h-4">
+                        <span>Sembunyikan Saldo Kosong</span>
+                    </label>
+
+                    <div class="bg-slate-100 border border-slate-200 p-1 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-1 shadow-inner">
+                        <div class="grid grid-cols-4 sm:flex items-center gap-0.5">
+                            <button @click="setQuickDateFilter('today')" :class="activeFilter === 'today' ? 'bg-white text-slate-800 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] transition duration-150 text-center">Hari Ini</button>
+                            <button @click="setQuickDateFilter('month')" :class="activeFilter === 'month' ? 'bg-white text-slate-800 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] transition duration-150 text-center">Bulan Ini</button>
+                            <button @click="setQuickDateFilter('year')" :class="activeFilter === 'year' ? 'bg-white text-slate-800 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] transition duration-150 text-center">Tahun Ini</button>
+                            <button @click="setQuickDateFilter('all')" :class="activeFilter === 'all' ? 'bg-white text-slate-800 font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900'" class="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] transition duration-150 text-center">Semua</button>
+                        </div>
+                        <div class="flex items-center justify-between gap-1.5 mt-1 sm:mt-0 sm:ml-1 border-t sm:border-t-0 sm:border-l border-slate-300 pt-1 sm:pt-0 sm:pl-2">
+                            <input type="date" x-model="filterStartDate" @change="activeFilter = 'custom'" class="w-full sm:w-auto border border-slate-200 bg-white text-[11px] px-2 py-1 rounded font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <span class="text-slate-400 text-xs font-medium">s/d</span>
+                            <input type="date" x-model="filterEndDate" @change="activeFilter = 'custom'" class="w-full sm:w-auto border border-slate-200 bg-white text-[11px] px-2 py-1 rounded font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+                <div x-show="currentTab === 'dashboard'" x-transition class="space-y-6">
+                    <div class="bg-teal-50 border border-teal-100 p-4 rounded-xl flex items-center gap-3">
+                        <span class="text-lg">ℹ️</span>
+                        <p class="text-xs text-teal-950 font-medium">Menampilkan rangkuman finansial berdasarkan filter aktif dengan standar pelaporan <strong>SAK ETAP (Entitas Tanpa Akuntabilitas Publik)</strong> — IAI 2016.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+                        <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition duration-200">
+                            <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider block">Total Aktiva (Aset)</span>
+                            <span class="text-lg md:text-xl font-black text-slate-900 mt-2 block tracking-tight" x-text="formatIDR(calculateSubtotal('aset', true))"></span>
+                            <span class="text-[10px] text-slate-400 mt-1 block">SAK ETAP Bab 4: Aset</span>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition duration-200">
+                            <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider block">Total Liabilitas (Utang)</span>
+                            <span class="text-lg md:text-xl font-black text-slate-900 mt-2 block tracking-tight" x-text="formatIDR(calculateSubtotal('liabilitas', true))"></span>
+                            <span class="text-[10px] text-slate-400 mt-1 block">SAK ETAP Bab 4: Kewajiban</span>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition duration-200">
+                            <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider block">Total Ekuitas (Modal)</span>
+                            <span class="text-lg md:text-xl font-black text-slate-900 mt-2 block tracking-tight" x-text="formatIDR(calculateSubtotal('ekuitas', true))"></span>
+                            <span class="text-[10px] text-slate-400 mt-1 block">SAK ETAP Bab 4: Ekuitas</span>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition duration-200">
+                            <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider block">Laba Bersih Periode</span>
+                            <span class="text-lg md:text-xl font-black mt-2 block tracking-tight" :class="calculateNetProfit() >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatIDR(calculateNetProfit())"></span>
+                            <span class="text-[10px] text-slate-400 mt-1 block">SAK ETAP Bab 5: Laba Rugi</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 col-span-1">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wide mb-4">Pendapatan vs Beban</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-slate-500 font-medium">Total Pendapatan</span>
+                                        <span class="font-bold text-emerald-600" x-text="formatIDR(calculateSubtotal('pendapatan'))"></span>
+                                    </div>
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-500 rounded-full" :style="`width: ${calculateSubtotal('pendapatan') > 0 ? Math.min(100, calculateSubtotal('pendapatan') / (calculateSubtotal('pendapatan') + calculateSubtotal('beban')) * 100) : 0}%`"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-slate-500 font-medium">Total Beban</span>
+                                        <span class="font-bold text-rose-600" x-text="formatIDR(calculateSubtotal('beban'))"></span>
+                                    </div>
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-rose-500 rounded-full" :style="`width: ${calculateSubtotal('beban') > 0 ? Math.min(100, calculateSubtotal('beban') / (calculateSubtotal('pendapatan') + calculateSubtotal('beban')) * 100) : 0}%`"></div>
+                                    </div>
+                                </div>
+                                <div class="pt-2 border-t border-slate-100">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="font-bold text-slate-700">Margin Laba</span>
+                                        <span class="font-black" :class="calculateNetProfit() >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="calculateSubtotal('pendapatan') > 0 ? (calculateNetProfit() / calculateSubtotal('pendapatan') * 100).toFixed(1) + '%' : '0%'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 col-span-1">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wide mb-4">Struktur Neraca SAK ETAP</h3>
+                            <div class="space-y-2">
+                                <template x-for="item in [
+                                    {label:'Aset Lancar', type:'aset_lancar', color:'bg-blue-500'},
+                                    {label:'Aset Tetap', type:'aset_tetap_val', color:'bg-indigo-500'},
+                                    {label:'Liabilitas', type:'liabilitas', color:'bg-rose-500'},
+                                    {label:'Ekuitas', type:'ekuitas', color:'bg-emerald-500'}
+                                ]" :key="item.type">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-2.5 h-2.5 rounded-sm" :class="item.color"></div>
+                                            <span class="text-slate-600" x-text="item.label"></span>
+                                        </div>
+                                        <span class="font-bold font-mono text-slate-800" x-text="formatIDR(getDashboardValue(item.type))"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 col-span-1">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wide mb-4">Rasio Keuangan</h3>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500">Rasio Lancar (Current Ratio)</span>
+                                    <span class="font-bold text-slate-800" x-text="calculateCurrentRatio() + 'x'"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500">Debt to Equity (DER)</span>
+                                    <span class="font-bold text-slate-800" x-text="calculateDER() + 'x'"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500">Return on Equity (ROE)</span>
+                                    <span class="font-bold" :class="calculateROE() >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="calculateROE() + '%'"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-500">Return on Assets (ROA)</span>
+                                    <span class="font-bold" :class="calculateROA() >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="calculateROA() + '%'"></span>
+                                </div>
+                                <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
+                                    <span class="text-slate-500 font-semibold">Total Voucher Jurnal</span>
+                                    <span class="font-black text-indigo-600" x-text="Object.keys(groupTransactions(transactions, true)).length"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wide">Status Periode Akuntansi</h3>
+                            <button @click="currentTab = 'tutup_buku'" class="text-xs text-indigo-600 font-bold hover:underline">Kelola Tutup Buku →</button>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                            <template x-for="m in closedPeriods" :key="m">
+                                <div class="bg-slate-900 text-white text-center rounded-lg py-2 px-1">
+                                    <div class="text-[10px] font-bold" x-text="m"></div>
+                                    <div class="text-[10px] text-emerald-400 font-semibold">✓ Tutup</div>
+                                </div>
+                            </template>
+                            <template x-if="closedPeriods.length === 0">
+                                <div class="col-span-full text-xs text-slate-400 italic py-2">Belum ada periode yang ditutup.</div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'coa'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-coa">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Bagan Rekening Akun SAK ETAP (Chart of Accounts)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">COA lengkap sesuai <strong>SAK ETAP IAI 2016</strong>. Sistem induk–anak multi-level. Klik <span class="font-semibold text-indigo-600">Ubah Nama</span> atau <span class="font-semibold text-rose-600">Hapus</span> akun tanpa transaksi.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button @click="openAddCoaModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-xs font-bold rounded-xl shadow-sm transition duration-150 w-full sm:w-auto">➕ Tambah Akun Baru</button>
+                            <button @click="exportPDF('view-coa', 'Bagan_Akun_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition duration-150 flex-1 sm:flex-none text-center">PDF</button>
+                            <button @click="exportExcel(['coa-table'], 'Bagan_Akun_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition duration-150 flex-1 sm:flex-none text-center">Excel</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-[600px] overflow-y-auto shadow-inner">
+                        <table id="coa-table" class="w-full text-left text-xs min-w-[700px]">
+                            <thead class="bg-slate-50 font-bold text-slate-700 border-b border-slate-200 sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-3 bg-slate-50">Kode Rekening</th>
+                                    <th class="p-3 bg-slate-50">Nama Rekening Perkiraan</th>
+                                    <th class="p-3 bg-slate-50">Klasifikasi SAK ETAP</th>
+                                    <th class="p-3 bg-slate-50">Normal Posisi</th>
+                                    <th class="p-3 bg-slate-50 text-right">Saldo Saat Ini</th>
+                                    <th class="p-3 bg-slate-50 text-center" data-html2canvas-ignore="true">Manajemen</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="acc in coa" :key="acc.code">
+                                    <tr class="hover:bg-slate-50/70 transition" :class="'level-'+acc.level" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0 || acc.level < 2">
+                                        <td class="p-3 font-mono font-bold text-slate-900" x-text="acc.code"></td>
+                                        <td class="p-3 text-slate-700 font-semibold" :style="`padding-left: ${(acc.level * 1.5) + 0.75}rem;`">
+                                            <div x-show="editingCoaCode === acc.code" class="flex flex-wrap items-center gap-2" data-html2canvas-ignore="true">
+                                                <input type="text" x-model="editingCoaName" class="border border-indigo-400 px-2 py-1 rounded-lg bg-white text-slate-800 font-medium text-xs w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                                <div class="flex gap-1">
+                                                    <button @click="saveCoaName(acc.code)" class="bg-emerald-600 text-white px-2.5 py-1 rounded-md text-[10px] font-bold shadow-sm hover:bg-emerald-700 transition">Simpan</button>
+                                                    <button @click="editingCoaCode = null" class="bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md text-[10px] font-bold hover:bg-slate-300 transition">Batal</button>
+                                                </div>
+                                            </div>
+                                            <span x-show="editingCoaCode !== acc.code" :class="acc.level === 0 ? 'font-black text-slate-900 uppercase' : acc.level === 1 ? 'font-bold text-slate-800' : acc.level === 2 ? 'font-semibold text-slate-700' : 'font-normal text-slate-600'">
+                                                <span x-text="acc.level === 1 ? '▸ ' : acc.level === 2 ? '└─ ' : acc.level >= 3 ? '  └─ ' : ''"></span>
+                                                <span x-text="acc.name"></span>
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-slate-500 text-[11px] font-medium" x-text="getCoaTypeLabel(acc.type)"></td>
+                                        <td class="p-3 uppercase font-bold text-[10px]" :class="acc.normal === 'debit' ? 'text-blue-600' : 'text-amber-600'" x-text="acc.normal"></td>
+                                        <td class="p-3 text-right font-mono font-bold text-slate-900" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                        <td class="p-3 text-center space-x-2" data-html2canvas-ignore="true">
+                                            <button x-show="editingCoaCode !== acc.code" @click="startEditCoa(acc)" class="text-indigo-600 hover:text-indigo-800 font-bold transition hover:underline">Ubah Nama</button>
+                                            <button x-show="editingCoaCode !== acc.code && acc.level >= 2" @click="deleteAccount(acc.code)" class="text-rose-600 hover:text-rose-800 font-bold transition hover:underline">Hapus</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'jurnal_input'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 space-y-5">
+                    <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base" x-text="isEditingMode ? '📝 Koreksi / Edit Jurnal Voucher' : '📝 Entri Jurnal Baru (Journal Voucher)'"></h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Lengkapi data header lalu tambahkan baris perkiraan akun secara seimbang (Balance). Jurnal multi-baris didukung penuh.</p>
+                        </div>
+                        <span class="text-xs font-mono font-bold bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg text-indigo-700 shadow-inner w-fit" x-text="`ID-VOUCHER: ${voucherId}`"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50/60 p-4 rounded-xl border border-slate-100">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Transaksi</label>
+                            <input type="date" x-model="jvHeader.date" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tipe Jurnal</label>
+                            <select x-model="jvHeader.type" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm">
+                                <option value="JU">Jurnal Umum</option>
+                                <option value="JP">Jurnal Penjualan</option> <option value="JB">Jurnal Pembelian</option>
+                                <option value="JKM">Jurnal Kas Masuk</option> <option value="JKK">Jurnal Kas Keluar</option>
+                                <option value="JPS">Jurnal Penyesuaian</option> <option value="JPB">Jurnal Penutup</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan Memo Jurnal</label>
+                            <input type="text" x-model="jvHeader.description" placeholder="Deskripsikan detail pencatatan transaksi..." class="w-full border border-slate-200 rounded-xl p-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-slate-50 to-indigo-50/30 p-4 md:p-5 rounded-2xl border border-indigo-100/60 space-y-4 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-indigo-100/50 pb-2 gap-2">
+                            <span class="text-xs font-bold text-slate-700 tracking-tight flex items-center gap-1.5">📥 Form Pengisian Baris Rekening Jurnal</span>
+                            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1 w-fit">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> Penyaringan Otomatis Aktif
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <div class="md:col-span-6">
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-1">Cari & Pilih Akun Rekening</label>
+                                <div class="space-y-1.5">
+                                    <input type="text" x-model="coaSearchText" placeholder="Ketik kata kunci nama / kode akun..." class="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition shadow-sm">
+                                    <select x-model="jvItem.account" class="w-full border border-slate-200 bg-white rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold transition shadow-sm">
+                                        <option value="">-- PILIH AKUN REKENING DETIL --</option>
+                                        <template x-for="acc in filteredCoa" :key="acc.code">
+                                            <option :value="acc.code" x-text="`${acc.code} - ${acc.name} (${acc.normal.toUpperCase()})`"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-1">Debit (IDR)</label>
+                                <input type="text" :value="formatInputRibuan(jvItem.debit)" @input="jvItem.debit = parseInputRibuan($event.target.value); if(jvItem.debit > 0) jvItem.kredit = 0" placeholder="0" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold bg-white text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-1">Kredit (IDR)</label>
+                                <input type="text" :value="formatInputRibuan(jvItem.kredit)" @input="jvItem.kredit = parseInputRibuan($event.target.value); if(jvItem.kredit > 0) jvItem.debit = 0" placeholder="0" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold bg-white text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <button @click="addJvItem()" class="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold py-2.5 px-4 text-xs rounded-xl transition duration-150 shadow-md">➕ Sisipkan</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-inner">
+                        <table class="w-full text-left text-xs min-w-[650px]">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                                <tr>
+                                    <th class="p-3">Kode</th>
+                                    <th class="p-3">Nama Rekening Akun</th>
+                                    <th class="p-3 text-right">Debit</th>
+                                    <th class="p-3 text-right">Kredit</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <template x-for="(item, idx) in jvItems" :key="idx">
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-mono font-bold text-slate-900" x-text="item.account"></td>
+                                        <td class="p-3 text-slate-700" x-text="getCoaName(item.account)"></td>
+                                        <td class="p-3 text-right font-mono font-bold text-blue-600" x-text="formatIDR(item.debit)"></td>
+                                        <td class="p-3 text-right font-mono font-bold text-amber-600" x-text="formatIDR(item.kredit)"></td>
+                                        <td class="p-3 text-center">
+                                            <button @click="removeJvItem(idx)" class="text-rose-600 hover:text-rose-800 font-bold transition hover:underline">Hapus</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="jvItems.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="p-6 text-center text-slate-400 italic">Belum ada baris akun yang disisipkan ke dalam voucher ini.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                            <tfoot class="bg-slate-50 border-t border-slate-200 font-bold text-slate-800">
+                                <tr>
+                                    <td colspan="2" class="p-3 text-right uppercase tracking-wider text-[11px]">Total Balansasi Konstruksi</td>
+                                    <td class="p-3 text-right font-mono text-blue-600 text-sm" x-text="formatIDR(calculateJvTotal().debit)"></td>
+                                    <td class="p-3 text-right font-mono text-amber-600 text-sm" x-text="formatIDR(calculateJvTotal().kredit)"></td>
+                                    <td></td>
+                                </tr>
+                                <tr class="bg-indigo-50/40 text-[11px]">
+                                    <td colspan="2" class="p-2.5 text-right text-slate-500 font-medium">Status Keseimbangan SAK:</td>
+                                    <td colspan="3" class="p-2.5 font-bold">
+                                        <span x-show="calculateJvTotal().isBalanced" class="text-emerald-600 flex items-center gap-1">✓ SEIMBANG (BALANCED)</span>
+                                        <span x-show="!calculateJvTotal().isBalanced" class="text-rose-600 flex items-center gap-1">✕ SELISIH: <span x-text="formatIDR(Math.abs(calculateJvTotal().debit - calculateJvTotal().kredit))"></span></span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button x-show="isEditingMode" @click="cancelEditMode()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-5 py-2.5 text-xs rounded-xl transition duration-150 shadow-sm">Batal Koreksi</button>
+                        <button @click="saveJournalVoucher()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 py-2.5 text-xs rounded-xl shadow-md transition duration-150" x-text="isEditingMode ? '💾 Simpan Perubahan Koreksi Jurnal' : '💾 Posting Jurnal ke Buku Besar'"></button>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'jurnal_riwayat'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-riwayat">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Riwayat Log Transaksi Jurnal (General Journal Ledger)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Seluruh jurnal terposting dikelompokkan per Nomor Voucher ID. Tombol <span class="font-bold text-indigo-600">Koreksi</span> digunakan untuk mengedit kembali jurnal.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-riwayat', 'Jurnal_Umum_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['riwayat-table'], 'Jurnal_Umum_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-inner">
+                        <table id="riwayat-table" class="w-full text-left text-xs min-w-[750px]">
+                            <thead class="bg-slate-50 font-bold text-slate-700 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Tanggal & Voucher ID</th>
+                                    <th class="p-3">Kode Akun</th>
+                                    <th class="p-3">Nama Akun Perkiraan / Detail Keterangan</th>
+                                    <th class="p-3 text-right">Debit</th>
+                                    <th class="p-3 text-right">Kredit</th>
+                                    <th class="p-3 text-center" data-html2canvas-ignore="true">Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="(group, vId) in groupTransactions(transactions)" :key="vId">
+                                    <tr class="hover:bg-slate-50/50 border-t border-slate-200 bg-slate-50/30">
+                                        <td class="p-3 font-mono font-bold text-slate-900 align-top">
+                                            <div class="text-xs" x-text="group.date"></div>
+                                            <div class="text-[10px] text-indigo-600 font-extrabold tracking-tight mt-0.5" x-text="vId"></div>
+                                            <span class="inline-block mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 uppercase" x-text="group.type"></span>
+                                        </td>
+                                        <td colspan="2" class="p-3 align-top font-bold text-slate-800">
+                                            <div class="italic text-slate-700 font-semibold" x-text="group.description"></div>
+                                            <div class="mt-2 text-[11px] font-medium text-slate-600">
+                                                <table class="w-full text-left">
+                                                    <template x-for="item in group.items" :key="item.id">
+                                                        <tr>
+                                                            <td class="w-20 font-mono text-[11px] text-slate-500 py-1" x-text="item.account"></td>
+                                                            <td class="py-1 pl-2 font-medium text-slate-700" :style="item.kredit > 0 ? 'padding-left: 2rem;' : ''" x-text="getCoaName(item.account)"></td>
+                                                            <td class="text-right font-mono text-blue-600 font-bold py-1 w-28" x-text="item.debit > 0 ? formatIDR(item.debit) : ''"></td>
+                                                            <td class="text-right font-mono text-amber-600 font-bold py-1 w-28" x-text="item.kredit > 0 ? formatIDR(item.kredit) : ''"></td>
+                                                        </tr>
+                                                    </template>
+                                                </table>
+                                            </div>
+                                        </td>
+                                        <td class="p-3 text-right font-mono font-black text-slate-900 align-top text-xs" x-text="formatIDR(group.totalDebit)"></td>
+                                        <td class="p-3 text-right font-mono font-black text-slate-900 align-top text-xs" x-text="formatIDR(group.totalKredit)"></td>
+                                        <td class="p-3 text-center align-top space-y-2" data-html2canvas-ignore="true">
+                                            <button @click="editJournalVoucher(vId, group)" class="block w-full bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow-sm">Koreksi</button>
+                                            <button @click="deleteJournalVoucher(vId)" class="block w-full bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold py-1 px-2 rounded-lg text-[10px] transition shadow-sm">Hapus</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="transactions.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="p-8 text-center text-slate-400 italic">Belum ada catatan transaksi jurnal umum yang terekam di database.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'buku_besar'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 space-y-4" id="view-ledger">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Buku Besar Rincian Rekening (General Ledger Detail)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Pilih rekening perkiraan hilir untuk memetakan mutasi debit-kredit dan sisa saldo akumulasi.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-ledger', 'Buku_Besar_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['ledger-table'], 'Buku_Besar_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 max-w-md" data-html2canvas-ignore="true">
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Filter Rekening Akun Buku Besar</label>
+                        <select x-model="selectedLedgerAccount" class="w-full border border-slate-200 bg-white rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            <option value="">-- PILIH REKENING AKUN --</option>
+                            <template x-for="acc in coa.filter(a => a.level >= 2)" :key="acc.code">
+                                <option :value="acc.code" x-text="`${acc.code} - ${acc.name}`"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-inner">
+                        <table id="ledger-table" class="w-full text-left text-xs min-w-[700px]">
+                            <thead class="bg-slate-50 font-bold text-slate-700 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3">Nomor Voucher</th>
+                                    <th class="p-3">Keterangan Memo Transaksi</th>
+                                    <th class="p-3 text-right">Debit (IDR)</th>
+                                    <th class="p-3 text-right">Kredit (IDR)</th>
+                                    <th class="p-3 text-right">Saldo Kumulatif (IDR)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <tr class="bg-indigo-50/20 font-bold text-slate-800">
+                                    <td colspan="3" class="p-3 uppercase text-[10px] tracking-wider text-slate-500">Saldo Awal Pra-Periode Filter</td>
+                                    <td class="p-3 text-right font-mono" x-text="getLedgerInitialAndLines().initial >= 0 && getCoaNormal(selectedLedgerAccount) === 'debit' || getLedgerInitialAndLines().initial < 0 && getCoaNormal(selectedLedgerAccount) === 'kredit' ? formatIDR(Math.abs(getLedgerInitialAndLines().initial)) : ''"></td>
+                                    <td class="p-3 text-right font-mono" x-text="getLedgerInitialAndLines().initial >= 0 && getCoaNormal(selectedLedgerAccount) === 'kredit' || getLedgerInitialAndLines().initial < 0 && getCoaNormal(selectedLedgerAccount) === 'debit' ? formatIDR(Math.abs(getLedgerInitialAndLines().initial)) : ''"></td>
+                                    <td class="p-3 text-right font-mono text-slate-900" x-text="formatIDR(Math.abs(getLedgerInitialAndLines().initial))"></td>
+                                </tr>
+                                <template x-for="line in getLedgerInitialAndLines().lines" :key="line.id">
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-mono text-slate-600" x-text="line.date"></td>
+                                        <td class="p-3 font-mono font-bold text-indigo-600" x-text="line.voucherId"></td>
+                                        <td class="p-3 text-slate-700" x-text="line.description"></td>
+                                        <td class="p-3 text-right font-mono text-blue-600 font-bold" x-text="line.debit > 0 ? formatIDR(line.debit) : '-'"></td>
+                                        <td class="p-3 text-right font-mono text-amber-600 font-bold" x-text="line.kredit > 0 ? formatIDR(line.kredit) : '-'"></td>
+                                        <td class="p-3 text-right font-mono font-black text-slate-900" x-text="formatIDR(line.runningBalance)"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="!selectedLedgerAccount">
+                                    <tr>
+                                        <td colspan="6" class="p-6 text-center text-slate-400 italic">Silakan pilih nomor kode rekening perkiraan di atas untuk melihat mutasi ledger.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'trial_balance'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-tb">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Neraca Lajur Saldo Pra-Penyesuaian (Trial Balance Worksheet)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Kompilasi logis dari seluruh akun hilir untuk memastikan totalitas posisi debit-kredit seimbang sebelum masuk ke laporan keuangan.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-tb', 'Neraca_Saldo_Lajur_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['tb-table'], 'Neraca_Saldo_Lajur_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-inner">
+                        <table id="tb-table" class="w-full text-left text-xs min-w-[750px]">
+                            <thead class="bg-slate-50 font-bold text-slate-700 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Kode Akun</th>
+                                    <th class="p-3">Nama Rekening Perkiraan</th>
+                                    <th class="p-3 text-right">Mutasi Debit Total</th>
+                                    <th class="p-3 text-right">Mutasi Kredit Total</th>
+                                    <th class="p-3 text-right">Saldo Akhir Debit</th>
+                                    <th class="p-3 text-right">Saldo Akhir Kredit</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <template x-for="acc in coa.filter(a => a.level >= 2)" :key="acc.code">
+                                    <tr class="hover:bg-slate-50 transition" x-show="!hideZeroBalances || getAccountBalance(acc.code, true).totalDebit !== 0 || getAccountBalance(acc.code, true).totalKredit !== 0">
+                                        <td class="p-3 font-mono font-bold text-slate-900" x-text="acc.code"></td>
+                                        <td class="p-3 font-semibold text-slate-800" x-text="acc.name"></td>
+                                        <td class="p-3 text-right font-mono text-slate-500" x-text="formatIDR(getAccountBalance(acc.code, true).totalDebit)"></td>
+                                        <td class="p-3 text-right font-mono text-slate-500" x-text="formatIDR(getAccountBalance(acc.code, true).totalKredit)"></td>
+                                        <td class="p-3 text-right font-mono text-blue-600 font-bold" x-text="getAccountBalance(acc.code, false) >= 0 && acc.normal === 'debit' || getAccountBalance(acc.code, false) < 0 && acc.normal === 'kredit' ? formatIDR(Math.abs(getAccountBalance(acc.code, false))) : '0'"></td>
+                                        <td class="p-3 text-right font-mono text-amber-600 font-bold" x-text="getAccountBalance(acc.code, false) >= 0 && acc.normal === 'kredit' || getAccountBalance(acc.code, false) < 0 && acc.normal === 'debit' ? formatIDR(Math.abs(getAccountBalance(acc.code, false))) : '0'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                            <tfoot class="bg-slate-50 font-black text-slate-900 border-t border-slate-200 text-xs">
+                                <tr>
+                                    <td colspan="2" class="p-3 uppercase tracking-wider text-right">Total Akumulasi Lajur</td>
+                                    <td class="p-3 text-right font-mono text-slate-600" x-text="formatIDR(calculateTrialBalanceTotals().debitMutasi)"></td>
+                                    <td class="p-3 text-right font-mono text-slate-600" x-text="formatIDR(calculateTrialBalanceTotals().kreditMutasi)"></td>
+                                    <td class="p-3 text-right font-mono text-blue-600 text-sm" x-text="formatIDR(calculateTrialBalanceTotals().debitSaldo)"></td>
+                                    <td class="p-3 text-right font-mono text-amber-600 text-sm" x-text="formatIDR(calculateTrialBalanceTotals().kreditSaldo)"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'laporan_labarugi'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-lr">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Laporan Laba Rugi Komprehensif SAK ETAP</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Sesuai dengan <strong>SAK ETAP Bab 5</strong>. Menyajikan pendapatan dan beban entitas secara berurutan.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-lr', 'Laporan_Laba_Rugi_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['lr-table'], 'Laporan_Laba_Rugi_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-inner bg-white max-w-4xl mx-auto p-4 md:p-8">
+                        <div class="text-center space-y-1 border-b border-slate-200 pb-5 mb-5">
+                            <h2 class="text-base font-black uppercase text-slate-900 tracking-wide" x-text="appName"></h2>
+                            <h3 class="text-xs font-bold uppercase text-slate-800">Laporan Laba Rugi Komprehensif</h3>
+                            <p class="text-[11px] font-mono font-medium text-slate-500" x-text="`Periode: ${filterStartDate} s/d ${filterEndDate}`"></p>
+                            <p class="text-[10px] text-teal-600 font-semibold tracking-tight">Standar Pelaporan: SAK ETAP Bab 5 (IAI)</p>
+                        </div>
+
+                        <table id="lr-table" class="w-full text-xs font-medium text-slate-700">
+                            <tbody>
+                                <tr class="level-0"><td class="p-2 uppercase" colspan="2">PENDAPATAN USAHA</td></tr>
+                                <template x-for="acc in coa.filter(a => a.type === 'pendapatan' && a.level >= 2)" :key="acc.code">
+                                    <tr class="hover:bg-slate-50 border-b border-slate-100" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0">
+                                        <td class="p-2 text-slate-600 pl-6" x-text="acc.name"></td>
+                                        <td class="p-2 text-right font-mono font-bold text-slate-900" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                    </tr>
+                                </template>
+                                <tr class="bg-slate-50 font-bold border-b border-slate-200">
+                                    <td class="p-2 uppercase pl-4 text-slate-800">TOTAL PENDAPATAN USAHA</td>
+                                    <td class="p-2 text-right font-mono text-emerald-600 text-sm" x-text="formatIDR(calculateSubtotal('pendapatan'))"></td>
+                                </tr>
+
+                                <tr class="level-0"><td class="p-2 uppercase pt-5" colspan="2">BEBAN OPERASIONAL & ADMINISTRASI</td></tr>
+                                <template x-for="acc in coa.filter(a => (a.type === 'beban' || a.type === 'biaya') && a.level >= 2)" :key="acc.code">
+                                    <tr class="hover:bg-slate-50 border-b border-slate-100" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0">
+                                        <td class="p-2 text-slate-600 pl-6" x-text="acc.name"></td>
+                                        <td class="p-2 text-right font-mono text-slate-800" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                    </tr>
+                                </template>
+                                <tr class="bg-slate-50 font-bold border-b border-slate-200">
+                                    <td class="p-2 uppercase pl-4 text-slate-800">TOTAL BEBAN OPERASIONAL</td>
+                                    <td class="p-2 text-right font-mono text-rose-600" x-text="formatIDR(calculateSubtotal('beban'))"></td>
+                                </tr>
+
+                                <tr class="bg-slate-950 text-white font-black text-sm">
+                                    <td class="p-3 uppercase tracking-wide">LABA / (RUGI) BERSIH PERIODE BERJALAN</td>
+                                    <td class="p-3 text-right font-mono text-amber-400" x-text="formatIDR(calculateNetProfit())"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'laporan_neraca'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-neraca">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Laporan Posisi Keuangan SAK ETAP (Neraca)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Sesuai dengan <strong>SAK ETAP Bab 4</strong>. Rumus baku: <span class="font-mono bg-slate-100 px-1 rounded text-slate-800 font-bold">Aset = Liabilitas + Ekuitas (Termasuk Laba Berjalan)</span>.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-neraca', 'Laporan_Neraca_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['neraca-table-1', 'neraca-table-2'], 'Laporan_Neraca_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-inner bg-white max-w-5xl mx-auto p-4 md:p-8">
+                        <div class="text-center space-y-1 border-b border-slate-200 pb-5 mb-5">
+                            <h2 class="text-base font-black uppercase text-slate-900 tracking-wide" x-text="appName"></h2>
+                            <h3 class="text-xs font-bold uppercase text-slate-800">Laporan Posisi Keuangan (Neraca)</h3>
+                            <p class="text-[11px] font-mono font-medium text-slate-500" x-text="`Per Tanggal: ${filterEndDate}`"></p>
+                            <p class="text-[10px] text-teal-600 font-semibold tracking-tight">Standar Pelaporan: SAK ETAP Bab 4 (IAI)</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 text-xs">
+                            <div class="space-y-4">
+                                <h4 class="font-black bg-slate-900 text-white py-1.5 px-3 rounded-md uppercase tracking-wider text-[11px]">Sisi Aktiva (Aset)</h4>
+                                <table id="neraca-table-1" class="w-full font-medium text-slate-700">
+                                    <tbody>
+                                        <tr class="level-1"><td class="p-1.5 uppercase" colspan="2">Aset Lancar</td></tr>
+                                        <template x-for="acc in coa.filter(a => a.type === 'aset' && a.code.startsWith('1-1') && a.level >= 2)" :key="acc.code">
+                                            <tr class="hover:bg-slate-50 border-b border-slate-100" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0">
+                                                <td class="p-1.5 text-slate-600 pl-4" x-text="acc.name"></td>
+                                                <td class="p-1.5 text-right font-mono font-bold text-slate-900" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                            </tr>
+                                        </template>
+                                        
+                                        <tr class="level-1"><td class="p-1.5 uppercase pt-3" colspan="2">Aset Tetap & Investasi</td></tr>
+                                        <template x-for="acc in coa.filter(a => a.type === 'aset' && !a.code.startsWith('1-1') && a.level >= 2)" :key="acc.code">
+                                            <tr class="hover:bg-slate-50 border-b border-slate-100" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0">
+                                                <td class="p-1.5 text-slate-600 pl-4" x-text="acc.name"></td>
+                                                <td class="p-1.5 text-right font-mono font-bold text-slate-900" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                            </tr>
+                                        </template>
+                                        
+                                        <tr class="bg-indigo-50 font-black border-t border-slate-300 text-slate-900">
+                                            <td class="p-2 uppercase">TOTAL AKTIVA (ASET)</td>
+                                            <td class="p-2 text-right font-mono text-indigo-600 text-sm" x-text="formatIDR(calculateSubtotal('aset', true))"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="space-y-4">
+                                <h4 class="font-black bg-slate-900 text-white py-1.5 px-3 rounded-md uppercase tracking-wider text-[11px]">Sisi Pasiva (Liabilitas & Ekuitas)</h4>
+                                <table id="neraca-table-2" class="w-full font-medium text-slate-700">
+                                    <tbody>
+                                        <tr class="level-1"><td class="p-1.5 uppercase" colspan="2">Liabilitas (Kewajiban Jangka Pendek/Panjang)</td></tr>
+                                        <template x-for="acc in coa.filter(a => a.type === 'liabilitas' && a.level >= 2)" :key="acc.code">
+                                            <tr class="hover:bg-slate-50 border-b border-slate-100" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0">
+                                                <td class="p-1.5 text-slate-600 pl-4" x-text="acc.name"></td>
+                                                <td class="p-1.5 text-right font-mono font-bold text-slate-900" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                            </tr>
+                                        </template>
+                                        <tr class="bg-slate-50 font-bold text-slate-800">
+                                            <td class="p-1.5 uppercase pl-2 text-[10px]">Subtotal Liabilitas</td>
+                                            <td class="p-1.5 text-right font-mono" x-text="formatIDR(calculateSubtotal('liabilitas', true))"></td>
+                                        </tr>
+
+                                        <tr class="level-1"><td class="p-1.5 uppercase pt-3" colspan="2">Ekuitas (Modal Sendiri)</td></tr>
+                                        <template x-for="acc in coa.filter(a => a.type === 'ekuitas' && a.level >= 2)" :key="acc.code">
+                                            <tr class="hover:bg-slate-50 border-b border-slate-100" x-show="!hideZeroBalances || getAccountBalance(acc.code, false) !== 0">
+                                                <td class="p-1.5 text-slate-600 pl-4" x-text="acc.name"></td>
+                                                <td class="p-1.5 text-right font-mono font-bold text-slate-900" x-text="formatIDR(getAccountBalance(acc.code, false))"></td>
+                                            </tr>
+                                        </template>
+                                        <tr class="border-b border-slate-100 font-semibold text-slate-800 bg-teal-50/50">
+                                            <td class="p-1.5 pl-4 italic">Laba Bersih Berjalan Periode</td>
+                                            <td class="p-1.5 text-right font-mono font-bold text-slate-900" x-text="formatIDR(calculateNetProfit())"></td>
+                                        </tr>
+                                        <tr class="bg-slate-50 font-bold text-slate-800">
+                                            <td class="p-1.5 uppercase pl-2 text-[10px]">Subtotal Ekuitas</td>
+                                            <td class="p-1.5 text-right font-mono" x-text="formatIDR(calculateSubtotal('ekuitas', true) + calculateNetProfit())"></td>
+                                        </tr>
+
+                                        <tr class="bg-indigo-50 font-black border-t border-slate-300 text-slate-900">
+                                            <td class="p-2 uppercase">TOTAL PASIVA (LIABILITAS + EKUITAS)</td>
+                                            <td class="p-2 text-right font-mono text-indigo-600 text-sm" x-text="formatIDR(calculateSubtotal('liabilitas', true) + calculateSubtotal('ekuitas', true) + calculateNetProfit())"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="p-3 rounded-xl font-bold flex items-center justify-between shadow-sm" :class="Math.abs(calculateSubtotal('aset', true) - (calculateSubtotal('liabilitas', true) + calculateSubtotal('ekuitas', true) + calculateNetProfit())) < 1 ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'">
+                                    <span class="text-[10px] uppercase tracking-wide">Status Struktur Neraca:</span>
+                                    <span class="text-xs" x-text="Math.abs(calculateSubtotal('aset', true) - (calculateSubtotal('liabilitas', true) + calculateSubtotal('ekuitas', true) + calculateNetProfit())) < 1 ? '✓ BALANCED (SEIMBANG)' : '✕ AMBLES / TIDAK SEIMBANG!'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'laporan_aruskas'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-cashflow">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Laporan Arus Kas Sistem Tidak Langsung (Indirect Cash Flow)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Sesuai <strong>SAK ETAP Bab 7</strong>. Diturunkan secara otomatis berdasarkan rekonsiliasi laba bersih terhadap pergeseran pos operasional.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-cashflow', 'Laporan_Arus_Kas_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['cf-table'], 'Laporan_Arus_Kas_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-inner bg-white max-w-4xl mx-auto p-4 md:p-8">
+                        <div class="text-center space-y-1 border-b border-slate-200 pb-5 mb-5">
+                            <h2 class="text-base font-black uppercase text-slate-900 tracking-wide" x-text="appName"></h2>
+                            <h3 class="text-xs font-bold uppercase text-slate-800">Laporan Arus Kas (Metode Tidak Langsung)</h3>
+                            <p class="text-[11px] font-mono font-medium text-slate-500" x-text="`Periode: ${filterStartDate} s/d ${filterEndDate}`"></p>
+                            <p class="text-[10px] text-teal-600 font-semibold tracking-tight">Standar Pelaporan: SAK ETAP Bab 7 (IAI)</p>
+                        </div>
+
+                        <table id="cf-table" class="w-full text-xs font-medium text-slate-700">
+                            <tbody>
+                                <tr class="level-0"><td class="p-2 uppercase" colspan="2">Arus Kas dari Aktivitas Operasi</td></tr>
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="p-2 text-slate-600 pl-6">Laba / (Rugi) Bersih Bersumber dari Laba Rugi</td>
+                                    <td class="p-2 text-right font-mono text-slate-900" x-text="formatIDR(calculateNetProfit())"></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="p-2 text-slate-600 pl-6">Penyesuaian Biaya Amortisasi & Penyusutan Aset Tetap</td>
+                                    <td class="p-2 text-right font-mono text-emerald-600" x-text="formatIDR(calculateTotalDepreciationFromJournal())"></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="p-2 text-slate-600 pl-6">Perubahan Bersih Giro, Piutang Usaha & Aset Lancar Lainnya</td>
+                                    <td class="p-2 text-right font-mono" :class="calculateCashFlowOperatingChanges().assets >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatIDR(calculateCashFlowOperatingChanges().assets)"></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="p-2 text-slate-600 pl-6">Perubahan Bersih Utang Dagang, Liabilitas Pendek & Pajak</td>
+                                    <td class="p-2 text-right font-mono" :class="calculateCashFlowOperatingChanges().liabilities >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatIDR(calculateCashFlowOperatingChanges().liabilities)"></td>
+                                </tr>
+                                <tr class="bg-slate-50 font-bold border-b border-slate-200">
+                                    <td class="p-2 uppercase pl-4 text-slate-800">Arus Kas Bersih Didapat Dari Aktivitas Operasi</td>
+                                    <td class="p-2 text-right font-mono text-slate-900" x-text="formatIDR(calculateNetProfit() + calculateTotalDepreciationFromJournal() + calculateCashFlowOperatingChanges().assets + calculateCashFlowOperatingChanges().liabilities)"></td>
+                                </tr>
+
+                                <tr class="level-0"><td class="p-2 uppercase pt-5" colspan="2">Arus Kas dari Aktivitas Investasi</td></tr>
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="p-2 text-slate-600 pl-6">Perubahan Bersih Perolehan / Pelepasan Aset Tetap</td>
+                                    <td class="p-2 text-right font-mono" :class="calculateCashFlowInvestment().val >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatIDR(calculateCashFlowInvestment().val)"></td>
+                                </tr>
+                                <tr class="bg-slate-50 font-bold border-b border-slate-200">
+                                    <td class="p-2 uppercase pl-4 text-slate-800">Arus Kas Bersih Digunakan Untuk Aktivitas Investasi</td>
+                                    <td class="p-2 text-right font-mono text-slate-900" x-text="formatIDR(calculateCashFlowInvestment().val)"></td>
+                                </tr>
+
+                                <tr class="level-0"><td class="p-2 uppercase pt-5" colspan="2">Arus Kas dari Aktivitas Pendanaan / Pembiayaan</td></tr>
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="p-2 text-slate-600 pl-6">Perubahan Bersih Pos Modal Saham & Laba Ditahan Historis</td>
+                                    <td class="p-2 text-right font-mono" :class="calculateCashFlowFinancing().val >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="formatIDR(calculateCashFlowFinancing().val)"></td>
+                                </tr>
+                                <tr class="bg-slate-50 font-bold border-b border-slate-200">
+                                    <td class="p-2 uppercase pl-4 text-slate-800">Arus Kas Bersih dari Aktivitas Pendanaan</td>
+                                    <td class="p-2 text-right font-mono text-slate-900" x-text="formatIDR(calculateCashFlowFinancing().val)"></td>
+                                </tr>
+
+                                <tr class="bg-slate-900 text-white font-black">
+                                    <td class="p-2.5 uppercase text-[11px]">Kenaikan / (Penurunan) Bersih Pos Pos Kas & Setara Kas</td>
+                                    <td class="p-2.5 text-right font-mono text-amber-400" x-text="formatIDR( (calculateNetProfit() + calculateTotalDepreciationFromJournal() + calculateCashFlowOperatingChanges().assets + calculateCashFlowOperatingChanges().liabilities) + calculateCashFlowInvestment().val + calculateCashFlowFinancing().val )"></td>
+                                </tr>
+                                <tr class="bg-slate-100 font-bold text-slate-800">
+                                    <td class="p-2 pl-4">Saldo Akhir Riil Kas & Bank (Buku Besar Akun Kas)</td>
+                                    <td class="p-2 text-right font-mono text-blue-600" x-text="formatIDR(getAccountBalance('1-101', false))"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'laporan_ekuitas'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6" id="view-equity">
+                    <div class="mb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4" data-html2canvas-ignore="true">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Laporan Perubahan Ekuitas Pemilik (Statement of Changes in Equity)</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Sesuai dengan <strong>SAK ETAP Bab 6</strong>. Memetakan pergerakan modal pemilik dari awal periode hingga akhir periode.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="exportPDF('view-equity', 'Laporan_Perubahan_Ekuitas_ETAP')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">PDF</button>
+                            <button @click="exportExcel(['equity-table'], 'Laporan_Perubahan_Ekuitas_ETAP')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-inner bg-white max-w-4xl mx-auto p-4 md:p-8">
+                        <div class="text-center space-y-1 border-b border-slate-200 pb-5 mb-5">
+                            <h2 class="text-base font-black uppercase text-slate-900 tracking-wide" x-text="appName"></h2>
+                            <h3 class="text-xs font-bold uppercase text-slate-800">Laporan Perubahan Ekuitas</h3>
+                            <p class="text-[11px] font-mono font-medium text-slate-500" x-text="`Periode: ${filterStartDate} s/d ${filterEndDate}`"></p>
+                        </div>
+
+                        <table id="equity-table" class="w-full text-xs font-medium text-slate-700 divide-y divide-slate-100">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-800 font-bold text-left">
+                                    <th class="p-2">Deskripsi Elemen Modal</th>
+                                    <th class="p-2 text-right">Saldo Awal</th>
+                                    <th class="p-2 text-right">Pergerakan Periode</th>
+                                    <th class="p-2 text-right">Saldo Akhir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-2 font-bold text-slate-800">Modal Saham / Pemilik Utama</td>
+                                    <td class="p-2 text-right font-mono" x-text="formatIDR(calculateSubtotal('ekuitas', true))"></td>
+                                    <td class="p-2 text-right font-mono text-slate-400">0</td>
+                                    <td class="p-2 text-right font-mono font-bold text-slate-900" x-text="formatIDR(calculateSubtotal('ekuitas', true))"></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-2 font-bold text-slate-800">Laba Bersih Ditahan / Berjalan</td>
+                                    <td class="p-2 text-right font-mono text-slate-400">0</td>
+                                    <td class="p-2 text-right font-mono text-emerald-600 font-bold" x-text="formatIDR(calculateNetProfit())"></td>
+                                    <td class="p-2 text-right font-mono font-bold text-slate-900" x-text="formatIDR(calculateNetProfit())"></td>
+                                </tr>
+                                <tr class="bg-slate-950 text-white font-black text-xs">
+                                    <td class="p-3 uppercase">TOTAL EKUITAS AKHIR PERIODE LENGKAP</td>
+                                    <td class="p-3 text-right font-mono" x-text="formatIDR(calculateSubtotal('ekuitas', true))"></td>
+                                    <td class="p-3 text-right font-mono text-amber-400" x-text="formatIDR(calculateNetProfit())"></td>
+                                    <td class="p-3 text-right font-mono text-amber-400" x-text="formatIDR(calculateSubtotal('ekuitas', true) + calculateNetProfit())"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'aset_tetap'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">Registrasi & Manajemen Penyusutan Aset Tetap</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Sesuai dengan <strong>SAK ETAP Bab 15</strong>. Penghitungan penyusutan berkala otomatis metode garis lurus.</p>
+                        </div>
+                        <button @click="openAddAssetModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition">➕ Registrasi Aset Baru</button>
+                    </div>
+
+                    <div x-show="showAssetModal" class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4 animate-scaleIn">
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wide">Formulir Pendaftaran Aktiva Tetap Baru</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Nama / Deskripsi Aset</label>
+                                <input type="text" x-model="newAsset.name" placeholder="Contoh: Kendaraan Operational Avanza" class="w-full border border-slate-200 bg-white rounded-lg p-2 text-xs focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Harga Perolehan Awal (IDR)</label>
+                                <input type="number" x-model.number="newAsset.cost" placeholder="0" class="w-full border border-slate-200 bg-white rounded-lg p-2 text-xs focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Masa Manfaat Ekonomis (Tahun)</label>
+                                <input type="number" x-model.number="newAsset.life" placeholder="Contoh: 4 atau 8" class="w-full border border-slate-200 bg-white rounded-lg p-2 text-xs focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Nilai Residu Akhir (IDR)</label>
+                                <input type="number" x-model.number="newAsset.residual" placeholder="0" class="w-full border border-slate-200 bg-white rounded-lg p-2 text-xs focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 text-xs font-bold">
+                            <button @click="showAssetModal = false" class="bg-slate-200 px-3 py-1.5 rounded-lg text-slate-700">Batal</button>
+                            <button @click="saveFixedAsset()" class="bg-teal-600 text-white px-4 py-1.5 rounded-lg">Simpan Registrasi</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-inner">
+                        <table class="w-full text-left text-xs min-w-[750px]">
+                            <thead class="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                                <tr>
+                                    <th class="p-3">ID Aset</th>
+                                    <th class="p-3">Nama Aktiva Tetap</th>
+                                    <th class="p-3 text-right">Harga Perolehan</th>
+                                    <th class="p-3 text-center">Masa Manfaat</th>
+                                    <th class="p-3 text-right">Nilai Residu</th>
+                                    <th class="p-3 text-right">Penyusutan / Tahun</th>
+                                    <th class="p-3 text-center">Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                                <template x-for="ast in fixedAssets" :key="ast.id">
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-mono font-bold text-slate-900" x-text="ast.id"></td>
+                                        <td class="p-3 font-semibold text-slate-800" x-text="ast.name"></td>
+                                        <td class="p-3 text-right font-mono font-bold text-slate-900" x-text="formatIDR(ast.cost)"></td>
+                                        <td class="p-3 text-center" x-text="`${ast.life} Tahun`"></td>
+                                        <td class="p-3 text-right font-mono text-slate-500" x-text="formatIDR(ast.residual)"></td>
+                                        <td class="p-3 text-right font-mono text-rose-600 font-bold" x-text="formatIDR((ast.cost - ast.residual) / ast.life)"></td>
+                                        <td class="p-3 text-center">
+                                            <button @click="generateDepreciationJournal(ast)" class="bg-teal-50 border border-teal-200 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded font-bold">Post Jurnal Susut</button>
+                                            <button @click="deleteFixedAsset(ast.id)" class="text-rose-600 hover:text-rose-800 font-bold ml-2 transition">Hapus</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="fixedAssets.length === 0">
+                                    <tr>
+                                        <td colspan="7" class="p-6 text-center text-slate-400 italic">Belum ada daftar aset tetap terdaftar.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'tutup_buku'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 space-y-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm md:text-base">Mekanisme Penguncian Periode & Tutup Buku Akuntansi</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Kunci transaksi di bulan atau tahun tertentu agar data historis tidak dapat diubah kembali demi integritas audit keuangan.</p>
+                    </div>
+
+                    <div class="bg-orange-50 border border-orange-100 p-4 rounded-xl max-w-xl space-y-3">
+                        <label class="block text-xs font-bold text-orange-950">Pilih Bulan/Periode Untuk Dikunci:</label>
+                        <div class="flex gap-2">
+                            <input type="month" x-model="selectedPeriodToClose" class="border border-orange-200 bg-white rounded-xl p-2.5 text-xs font-mono font-bold focus:outline-none">
+                            <button @click="closePeriod()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold px-4 py-2.5 text-xs rounded-xl transition shadow-md">✓ Kunci Periode Ini</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl overflow-hidden max-w-xl shadow-inner">
+                        <div class="bg-slate-50 p-3 font-bold text-slate-700 border-b border-slate-200 text-xs uppercase tracking-wide">Daftar Seluruh Periode Yang Dikunci</div>
+                        <div class="divide-y divide-slate-100 text-xs">
+                            <template x-for="p in closedPeriods" :key="p">
+                                <div class="p-3 flex justify-between items-center bg-white font-mono font-bold">
+                                    <span class="text-slate-800" x-text="`PERIODE BULAN: ${p}`"></span>
+                                    <button @click="openClosedPeriod(p)" class="text-rose-600 hover:text-rose-800 font-semibold text-[11px] hover:underline">Buka Kunci</button>
+                                </div>
+                            </template>
+                            <template x-if="closedPeriods.length === 0">
+                                <div class="p-4 text-center text-slate-400 italic bg-white">Belum ada log periode yang dikunci.</div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="currentTab === 'setting'" x-transition class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 space-y-6">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm md:text-base">Pengaturan Konsol Sistem & Database Backup</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Atur parameter internal entitas usaha, lakukan pencadangan data lokal atau reset total aplikasi.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <h4 class="font-bold text-slate-800 uppercase tracking-wide text-[11px]">Identitas Usaha Entitas</h4>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Nama Perusahaan / Entitas</label>
+                                <input type="text" x-model="appName" class="w-full border border-slate-200 bg-white rounded-lg p-2.5 focus:outline-none font-bold text-slate-800 shadow-sm">
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4 shadow-sm">
+                            <h4 class="font-bold text-slate-800 uppercase tracking-wide text-[11px]">Utilitas Backup & Pemulihan JSON</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="exportDatabaseBackup()" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-indigo-700 shadow-sm">📥 Unduh Backup DB</button>
+                                <label class="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-slate-900 cursor-pointer text-center">
+                                    📤 Pulihkan Database
+                                    <input type="file" @change="restoreDatabaseBackup($event)" class="hidden">
+                                </label>
+                            </div>
+                            <div class="pt-3 border-t border-slate-200">
+                                <button @click="resetAppAllData()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs w-full sm:w-auto shadow-sm">🚨 Reset Hapus Seluruh Database</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== GANTI USERNAME ===== -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 shadow-sm text-xs">
+                        <h4 class="font-bold text-slate-800 uppercase tracking-wide text-[11px]">👤 Ganti Username Akun</h4>
+                        <p class="text-[11px] text-slate-400">Ubah username login untuk akun yang sedang aktif. Perubahan tersinkron ke Supabase.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1 font-semibold">Username Baru</label>
+                                <input type="text" id="cu-new" placeholder="Username baru..." class="w-full border border-slate-200 bg-white rounded-lg p-2.5 focus:outline-none text-slate-800 shadow-sm focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1 font-semibold">Konfirmasi Password</label>
+                                <input type="password" id="cu-pass" placeholder="••••••••" class="w-full border border-slate-200 bg-white rounded-lg p-2.5 focus:outline-none text-slate-800 shadow-sm focus:border-indigo-400">
+                            </div>
+                        </div>
+                        <div id="cu-msg" class="text-[11px] min-h-[1.2rem] font-semibold"></div>
+                        <button onclick="changeUsername()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm transition">💾 Simpan Username Baru</button>
+                    </div>
+
+                    <!-- ===== GANTI PASSWORD ===== -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 shadow-sm text-xs" id="change-password-section">
+                        <h4 class="font-bold text-slate-800 uppercase tracking-wide text-[11px]">🔑 Ganti Password Akun</h4>
+                        <p class="text-[11px] text-slate-400">Ubah password untuk akun yang sedang aktif. Perubahan tersinkron ke Supabase.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1 font-semibold">Password Lama</label>
+                                <input type="password" id="cp-old" placeholder="••••••••" class="w-full border border-slate-200 bg-white rounded-lg p-2.5 focus:outline-none text-slate-800 shadow-sm focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1 font-semibold">Password Baru</label>
+                                <input type="password" id="cp-new" placeholder="••••••••" class="w-full border border-slate-200 bg-white rounded-lg p-2.5 focus:outline-none text-slate-800 shadow-sm focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1 font-semibold">Konfirmasi Password Baru</label>
+                                <input type="password" id="cp-confirm" placeholder="••••••••" class="w-full border border-slate-200 bg-white rounded-lg p-2.5 focus:outline-none text-slate-800 shadow-sm focus:border-indigo-400">
+                            </div>
+                        </div>
+                        <div id="cp-msg" class="text-[11px] min-h-[1.2rem] font-semibold"></div>
+                        <button onclick="changePassword()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm transition">💾 Simpan Password Baru</button>
+                    </div>
+
+                    <!-- ===== SUPABASE SETTINGS ===== -->
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 space-y-3 shadow-sm text-xs">
+                        <h4 class="font-bold text-emerald-900 uppercase tracking-wide text-[11px]">🟢 Pengaturan Supabase Cloud Sync</h4>
+                        <p class="text-[11px] text-emerald-700">PostgreSQL gratis — unlimited requests, 500MB storage.</p>
+                        <div id="cloud-setting-status" class="text-[11px]"></div>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="document.getElementById('setup-modal').classList.add('show')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition">⚙️ Konfigurasi Ulang Supabase</button>
+                            <button onclick="cloudPull(function(ok){ alert(ok?'✅ Data terbaru berhasil dimuat!':'⚠️ Gagal mengambil data Supabase.'); if(ok) window.location.reload(); })" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition">🔄 Tarik Data Terbaru</button>
+                            <button onclick="window._getTripoDataForCloud && cloudPush(window._getTripoDataForCloud()).then(function(ok){ alert(ok?'✅ Data berhasil dikirim ke Supabase!':'⚠️ Gagal mengirim data.'); })" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition">☁️ Kirim Data Lokal ke Cloud</button>
+                            <button onclick="resetCloudConfig()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition">🔌 Reset Konfigurasi</button>
+                        </div>
+                    </div>
+                    <!-- ===== END SUPABASE SETTINGS ===== -->
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div x-show="showCoaModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200 overflow-hidden animate-scaleIn">
+            <div class="bg-slate-950 text-white p-4 font-bold text-xs uppercase tracking-wider flex justify-between items-center">
+                <span>➕ Daftarkan Akun Baru (COA)</span>
+                <button @click="showCoaModal = false" class="text-white hover:text-slate-300">✕</button>
+            </div>
+            <div class="p-5 space-y-4 text-xs font-medium text-slate-700">
+                <div>
+                    <label class="block mb-1 font-bold text-slate-500">Tipe Akun SAK ETAP</label>
+                    <select x-model="newCoa.type" class="w-full border border-slate-200 rounded-lg p-2.5 bg-white focus:outline-none">
+                        <option value="aset">Aset / Aktiva</option>
+                        <option value="liabilitas">Liabilitas / Kewajiban</option>
+                        <option value="ekuitas">Ekuitas / Modal</option>
+                        <option value="pendapatan">Pendapatan Usaha</option>
+                        <option value="beban">Beban Operasional</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-1 font-bold text-slate-500">Kode Akun Rekening Baru (Gunakan Titik Penanda Induk)</label>
+                    <input type="text" x-model="newCoa.code" placeholder="Contoh: 1-103" class="w-full border border-slate-200 rounded-lg p-2.5 font-mono focus:outline-none">
+                </div>
+                <div>
+                    <label class="block mb-1 font-bold text-slate-500">Nama Rekening Perkiraan</label>
+                    <input type="text" x-model="newCoa.name" placeholder="Contoh: Kas Kecil Kantor Utama" class="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block mb-1 font-bold text-slate-500">Posisi Normal Akun</label>
+                    <select x-model="newCoa.normal" class="w-full border border-slate-200 rounded-lg p-2.5 bg-white focus:outline-none uppercase font-bold">
+                        <option value="debit">DEBIT</option>
+                        <option value="kredit">KREDIT</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 font-bold">
+                    <button @click="showCoaModal = false" class="bg-slate-100 px-4 py-2 rounded-xl text-slate-600">Batal</button>
+                    <button @click="saveNewAccount()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl shadow-md">Simpan Akun</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function erpApp() {
+        return {
+            currentTab: 'dashboard',
+            appName: 'Tripo ERP System',
+            hideZeroBalances: false,
+            activeFilter: 'all',
+            filterStartDate: '2026-01-01',
+            filterEndDate: '2026-12-31',
+            coaSearchText: '',
+            voucherId: '',
+            isEditingMode: false,
+            editingVoucherId: null,
+            editingCoaCode: null,
+            editingCoaName: '',
+            showCoaModal: false,
+            showAssetModal: false,
+            selectedLedgerAccount: '',
+            selectedPeriodToClose: '',
+            
+            // Core Databases
+            transactions: [],
+            fixedAssets: [],
+            closedPeriods: [],
+            
+            // Form Inits
+            jvHeader: { date: '', type: 'JU', description: '' },
+            jvItem: { account: '', debit: 0, kredit: 0 },
+            jvItems: [],
+            newCoa: { type: 'aset', code: '', name: '', normal: 'debit' },
+            newAsset: { name: '', cost: 0, life: 4, residual: 0 },
+
+            // SAK ETAP Standard Chart of Accounts Master
+            coa: [
+                { code: '1-000', name: 'AKTIVA (ASET)', type: 'aset', normal: 'debit', level: 0 },
+                { code: '1-100', name: 'ASET LANCAR', type: 'aset', normal: 'debit', level: 1 },
+                { code: '1-101', name: 'Kas dan Setara Kas', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-102', name: 'Piutang Usaha', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-103', name: 'Persediaan Barang Dagang', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-104', name: 'Biaya Dibayar Dimuka', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-200', name: 'ASET TETAP', type: 'aset', normal: 'debit', level: 1 },
+                { code: '1-201', name: 'Tanpa Hak Atas Tanah', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-202', name: 'Bangunan dan Gedung', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-203', name: 'Akumulasi Penyusutan Gedung', type: 'aset', normal: 'kredit', level: 3 },
+                { code: '1-204', name: 'Mesin dan Peralatan Pabrik', type: 'aset', normal: 'debit', level: 2 },
+                { code: '1-205', name: 'Akumulasi Penyusutan Mesin', type: 'aset', normal: 'kredit', level: 3 },
+                
+                { code: '2-000', name: 'LIABILITAS (KEWAJIBAN)', type: 'liabilitas', normal: 'kredit', level: 0 },
+                { code: '2-100', name: 'KEWAJIBAN JANGKA PENDEK', type: 'liabilitas', normal: 'kredit', level: 1 },
+                { code: '2-101', name: 'Utang Usaha / Dagang', type: 'liabilitas', normal: 'kredit', level: 2 },
+                { code: '2-102', name: 'Utang Gaji dan Beban', type: 'liabilitas', normal: 'kredit', level: 2 },
+                { code: '2-103', name: 'Utang Pajak (PPN/PPh)', type: 'liabilitas', normal: 'kredit', level: 2 },
+                
+                { code: '3-000', name: 'EKUITAS (MODAL)', type: 'ekuitas', normal: 'kredit', level: 0 },
+                { code: '3-100', name: 'MODAL DISETOR', type: 'ekuitas', normal: 'kredit', level: 1 },
+                { code: '3-101', name: 'Modal Saham Pemilik', type: 'ekuitas', normal: 'kredit', level: 2 },
+                { code: '3-102', name: 'Tambahan Modal Disetor', type: 'ekuitas', normal: 'kredit', level: 2 },
+                { code: '3-200', name: 'SALDO LABA HISTORIS', type: 'ekuitas', normal: 'kredit', level: 1 },
+                { code: '3-201', name: 'Laba Ditahan Tahun Lalu', type: 'ekuitas', normal: 'kredit', level: 2 },
+                
+                { code: '4-000', name: 'PENDAPATAN USAHA', type: 'pendapatan', normal: 'kredit', level: 0 },
+                { code: '4-100', name: 'PENDAPATAN UTAMA', type: 'pendapatan', normal: 'kredit', level: 1 },
+                { code: '4-101', name: 'Pendapatan Penjualan Jasa/Barang', type: 'pendapatan', normal: 'kredit', level: 2 },
+                { code: '4-102', name: 'Retur & Potongan Penjualan', type: 'pendapatan', normal: 'debit', level: 2 },
+                
+                { code: '5-000', name: 'BEBAN OPERASIONAL', type: 'beban', normal: 'debit', level: 0 },
+                { code: '5-100', name: 'BEBAN KARYAWAN & UTILITAS', type: 'beban', normal: 'debit', level: 1 },
+                { code: '5-101', name: 'Beban Gaji dan Tunjangan', type: 'beban', normal: 'debit', level: 2 },
+                { code: '5-102', name: 'Beban Listrik, Air & Internet', type: 'beban', normal: 'debit', level: 2 },
+                { code: '5-103', name: 'Beban Penyusutan Aset Tetap', type: 'beban', normal: 'debit', level: 2 },
+                { code: '5-104', name: 'Beban Administrasi Umum Lainnya', type: 'beban', normal: 'debit', level: 2 }
+            ],
+
+            init() {
+                let d = new Date();
+                let y = d.getFullYear();
+                this.filterStartDate = `${y}-01-01`;
+                this.filterEndDate   = `${y}-12-31`;
+                this.jvHeader.date   = d.toISOString().split('T')[0];
+
+                if (localStorage.getItem('tripo_transactions'))  this.transactions  = JSON.parse(localStorage.getItem('tripo_transactions'));
+                if (localStorage.getItem('tripo_custom_coa'))    this.coa           = JSON.parse(localStorage.getItem('tripo_custom_coa'));
+                if (localStorage.getItem('tripo_fixed_assets'))  this.fixedAssets   = JSON.parse(localStorage.getItem('tripo_fixed_assets'));
+                if (localStorage.getItem('tripo_closed_periods'))this.closedPeriods = JSON.parse(localStorage.getItem('tripo_closed_periods'));
+                if (localStorage.getItem('tripo_app_name'))      this.appName       = localStorage.getItem('tripo_app_name');
+
+                this.generateVoucherId();
+                this.$watch('appName', value => {
+                    localStorage.setItem('tripo_app_name', value);
+                    window._getTripoDataForCloud && window.cloudPush && window.cloudPush(window._getTripoDataForCloud());
+                });
+
+                // Update status bar & header username
+                window.updateSidebarStatus && window.updateSidebarStatus();
+                var uEl = document.getElementById('header-username');
+                if (uEl) uEl.textContent = sessionStorage.getItem('tripo_active_user') || 'admin';
+
+                // Supabase setting status card
+                var mode = localStorage.getItem('tripo_cloud_mode');
+                var csEl = document.getElementById('cloud-setting-status');
+                if (csEl) {
+                    csEl.innerHTML = mode === 'supabase'
+                        ? '<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-1 rounded font-bold">🟢 Supabase Aktif — Data tersinkron semua perangkat</span>'
+                        : '<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded font-bold">💾 Mode Lokal — Klik tombol di bawah untuk aktifkan Supabase</span>';
+                }
+
+                // Register cloud data helper
+                var self = this;
+                window._getTripoDataForCloud = function () {
+                    var stored = localStorage.getItem('tripo_users');
+                    return {
+                        transactions : self.transactions,
+                        coa          : self.coa,
+                        fixedAssets  : self.fixedAssets,
+                        closedPeriods: self.closedPeriods,
+                        appName      : self.appName,
+                        users        : stored ? JSON.parse(stored) : {}
+                    };
+                };
+            },
+
+            // UTILITY BARU UNTUK FORMAT TITIK OTOMATIS SAAT INPUT ANGKA
+            formatInputRibuan(angka) {
+                if (angka === undefined || angka === null || angka === 0 || isNaN(angka)) return '';
+                return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            },
+            parseInputRibuan(value) {
+                let murni = value.replace(/\./g, '');
+                if (murni === '') return 0;
+                let parsed = parseInt(murni, 10);
+                return isNaN(parsed) ? 0 : parsed;
+            },
+
+            generateVoucherId() {
+                let prefix = this.jvHeader.type || 'JU';
+                let rand = Math.floor(1000 + Math.random() * 9000);
+                this.voucherId = `${prefix}-${rand}`;
+            },
+
+            formatIDR(num) {
+                if(num === undefined || num === null) return "Rp 0";
+                return "Rp " + Number(num).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            },
+
+            getCoaTypeLabel(t) {
+                let map = { 'aset': '1 - AKTIVA', 'liabilitas': '2 - KEWAJIBAN', 'ekuitas': '3 - MODAL', 'pendapatan': '4 - PENDAPATAN', 'beban': '5 - BEBAN' };
+                return map[t] || t.toUpperCase();
+            },
+
+            getCoaNormal(code) {
+                let f = this.coa.find(a => a.code === code);
+                return f ? f.normal : 'debit';
+            },
+
+            getCoaName(code) {
+                let f = this.coa.find(a => a.code === code);
+                return f ? f.name : 'Rekening Tidak Dikenal';
+            },
+
+            get filteredCoa() {
+                return this.coa.filter(a => {
+                    if (a.level < 2) return false;
+                    if (!this.coaSearchText) return true;
+                    let txt = this.coaSearchText.toLowerCase();
+                    return a.code.toLowerCase().includes(txt) || a.name.toLowerCase().includes(txt);
+                });
+            },
+
+            setQuickDateFilter(type) {
+                this.activeFilter = type;
+                let today = new Date();
+                let y = today.getFullYear();
+                if (type === 'today') {
+                    let s = today.toISOString().split('T')[0];
+                    this.filterStartDate = s; this.filterEndDate = s;
+                } else if (type === 'month') {
+                    let m = today.getMonth() + 1;
+                    if (m < 10) m = '0' + m;
+                    this.filterStartDate = `${y}-${m}-01`;
+                    let lastDay = new Date(y, today.getMonth() + 1, 0).getDate();
+                    this.filterEndDate = `${y}-${m}-${lastDay}`;
+                } else if (type === 'year') {
+                    this.filterStartDate = `${y}-01-01`;
+                    this.filterEndDate = `${y}-12-31`;
+                } else if (type === 'all') {
+                    this.filterStartDate = '2000-01-01';
+                    this.filterEndDate = '2099-12-31';
+                }
+            },
+
+            getAccountBalance(code, detailedObj = false) {
+                let start = new Date(this.filterStartDate);
+                let end = new Date(this.filterEndDate);
+                let totalDebit = 0;
+                let totalKredit = 0;
+
+                this.transactions.forEach(t => {
+                    let tDate = new Date(t.date);
+                    if (tDate >= start && tDate <= end) {
+                        if (t.account === code || t.account.startsWith(code + '.')) {
+                            totalDebit += Number(t.debit || 0);
+                            totalKredit += Number(t.kredit || 0);
+                        }
+                    }
+                });
+
+                if (detailedObj) {
+                    return { totalDebit, totalKredit };
+                }
+
+                let targetNormal = this.getCoaNormal(code);
+                if (targetNormal === 'debit') {
+                    return totalDebit - totalKredit;
+                } else {
+                    return totalKredit - totalDebit;
+                }
+            },
+
+            calculateSubtotal(type, includeChildren = true) {
+                let sum = 0;
+                this.coa.forEach(a => {
+                    if (a.type === type && a.level >= 2) {
+                        sum += this.getAccountBalance(a.code, false);
+                    }
+                });
+                return sum;
+            },
+
+            calculateNetProfit() {
+                let pendapatan = this.calculateSubtotal('pendapatan');
+                let beban = this.calculateSubtotal('beban');
+                return pendapatan - beban;
+            },
+
+            getDashboardValue(k) {
+                if (k === 'aset_lancar') {
+                    let sum = 0;
+                    this.coa.forEach(a => { if(a.type==='aset' && a.code.startsWith('1-1') && a.level>=2) sum+=this.getAccountBalance(a.code); });
+                    return sum;
+                }
+                if (k === 'aset_tetap_val') {
+                    let sum = 0;
+                    this.coa.forEach(a => { if(a.type==='aset' && !a.code.startsWith('1-1') && a.level>=2) sum+=this.getAccountBalance(a.code); });
+                    return sum;
+                }
+                if (k === 'liabilitas') return this.calculateSubtotal('liabilitas');
+                if (k === 'ekuitas') return this.calculateSubtotal('ekuitas') + this.calculateNetProfit();
+                return 0;
+            },
+
+            calculateCurrentRatio() {
+                let lancar = this.getDashboardValue('aset_lancar');
+                let utang = this.getDashboardValue('liabilitas');
+                if(utang === 0) return lancar > 0 ? 'Infinite' : '0.00';
+                return (lancar / utang).toFixed(2);
+            },
+
+            calculateDER() {
+                let utang = this.getDashboardValue('liabilitas');
+                let modal = this.getDashboardValue('ekuitas');
+                if(modal === 0) return utang > 0 ? 'Infinite' : '0.00';
+                return (utang / modal).toFixed(2);
+            },
+
+            calculateROE() {
+                let laba = this.calculateNetProfit();
+                let modal = this.getDashboardValue('ekuitas');
+                if(modal === 0) return '0.0';
+                return ((laba / modal) * 100).toFixed(1);
+            },
+
+            calculateROA() {
+                let laba = this.calculateNetProfit();
+                let aset = this.calculateSubtotal('aset', true);
+                if(aset === 0) return '0.0';
+                return ((laba / aset) * 100).toFixed(1);
+            },
+
+            addJvItem() {
+                if (!this.jvItem.account) { alert("Pilih kode akun terlebih dahulu!"); return; }
+                if (this.jvItem.debit === 0 && this.jvItem.kredit === 0) { alert("Nominal debet atau kredit harus diisi!"); return; }
+
+                this.jvItems.push({
+                    account: this.jvItem.account,
+                    debit: Number(this.jvItem.debit),
+                    kredit: Number(this.jvItem.kredit)
+                });
+
+                this.jvItem = { account: '', debit: 0, kredit: 0 };
+                this.coaSearchText = '';
+            },
+
+            removeJvItem(idx) {
+                this.jvItems.splice(idx, 1);
+            },
+
+            calculateJvTotal() {
+                let d = 0, k = 0;
+                this.jvItems.forEach(i => { d += i.debit; k += i.kredit; });
+                return { debit: d, kredit: k, isBalanced: Math.abs(d - k) < 1 && d > 0 };
+            },
+
+            saveJournalVoucher() {
+                if (!this.jvHeader.date) { alert("Tanggal transaksi wajib ditentukan!"); return; }
+                if (this.jvItems.length < 2) { alert("Minimal harus diisi 2 baris akun (Sistem Jurnal Berpasangan)!"); return; }
+                
+                let tot = this.calculateJvTotal();
+                if (!tot.isBalanced) { alert("Konstruksi jurnal belum balance / tidak seimbang!"); return; }
+
+                let transMonth = this.jvHeader.date.substring(0, 7);
+                if (this.closedPeriods.includes(transMonth)) {
+                    alert("Gagal posting! Periode akuntansi bulan tersebut telah dikunci / ditutup buku!");
+                    return;
+                }
+
+                if (this.isEditingMode && this.editingVoucherId) {
+                    this.transactions = this.transactions.filter(t => t.voucherId !== this.editingVoucherId);
+                }
+
+                let currentVoucher = this.isEditingMode ? this.editingVoucherId : this.voucherId;
+
+                this.jvItems.forEach(i => {
+                    this.transactions.push({
+                        id: 'TX-' + Math.floor(100000 + Math.random() * 900000),
+                        voucherId: currentVoucher,
+                        date: this.jvHeader.date,
+                        type: this.jvHeader.type,
+                        description: this.jvHeader.description || 'Pencatatan Tanpa Memo',
+                        account: i.account,
+                        debit: i.debit,
+                        kredit: i.kredit
+                    });
+                });
+
+                this.saveToStorage();
+                alert(this.isEditingMode ? "Koreksi Jurnal berhasil diperbarui!" : "Jurnal Voucher Berhasil Diposting!");
+                
+                this.cancelEditMode();
+                this.currentTab = 'jurnal_riwayat';
+            },
+
+            saveToStorage() {
+                localStorage.setItem('tripo_transactions', JSON.stringify(this.transactions));
+                var self = this;
+                window._getTripoDataForCloud = function () {
+                    var stored = localStorage.getItem('tripo_users');
+                    return {
+                        transactions : self.transactions,
+                        coa          : self.coa,
+                        fixedAssets  : self.fixedAssets,
+                        closedPeriods: self.closedPeriods,
+                        appName      : self.appName,
+                        users        : stored ? JSON.parse(stored) : {}
+                    };
+                };
+                window.cloudPush && window.cloudPush(window._getTripoDataForCloud());
+            },
+
+            groupTransactions(txArray, ignoreFilters = false) {
+                let out = {};
+                let start = new Date(this.filterStartDate);
+                let end = new Date(this.filterEndDate);
+
+                txArray.forEach(t => {
+                    if (!ignoreFilters) {
+                        let d = new Date(t.date);
+                        if (d < start || d > end) return;
+                    }
+                    if (!out[t.voucherId]) {
+                        out[t.voucherId] = { date: t.date, type: t.type, description: t.description, items: [], totalDebit: 0, totalKredit: 0 };
+                    }
+                    out[t.voucherId].items.push(t);
+                    out[t.voucherId].totalDebit += Number(t.debit || 0);
+                    out[t.voucherId].totalKredit += Number(t.kredit || 0);
+                });
+                return out;
+            },
+
+            editJournalVoucher(vId, groupData) {
+                this.isEditingMode = true;
+                this.editingVoucherId = vId;
+                this.jvHeader = { date: groupData.date, type: groupData.type, description: groupData.description };
+                this.jvItems = groupData.items.map(i => ({ account: i.account, debit: i.debit, kredit: i.kredit }));
+                this.currentTab = 'jurnal_input';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            cancelEditMode() {
+                this.isEditingMode = false;
+                this.editingVoucherId = null;
+                this.jvHeader = { date: new Date().toISOString().split('T')[0], type: 'JU', description: '' };
+                this.jvItems = [];
+                this.generateVoucherId();
+            },
+
+            deleteJournalVoucher(vId) {
+                let target = this.transactions.find(t => t.voucherId === vId);
+                if (target) {
+                    let m = target.date.substring(0, 7);
+                    if (this.closedPeriods.includes(m)) { alert("Gagal! Periode ini telah dikunci total."); return; }
+                }
+                if (confirm(`Hapus permanen Voucher Jurnal ID: ${vId}?`)) {
+                    this.transactions = this.transactions.filter(t => t.voucherId !== vId);
+                    this.saveToStorage();
+                }
+            },
+
+            getLedgerInitialAndLines() {
+                if (!this.selectedLedgerAccount) return { initial: 0, lines: [] };
+                let start = new Date(this.filterStartDate);
+                let end = new Date(this.filterEndDate);
+                let normal = this.getCoaNormal(this.selectedLedgerAccount);
+
+                let initial = 0;
+                let lines = [];
+
+                this.transactions.forEach(t => {
+                    if (t.account === this.selectedLedgerAccount) {
+                        let d = new Date(t.date);
+                        if (d < start) {
+                            if (normal === 'debit') initial += (t.debit - t.kredit);
+                            else initial += (t.kredit - t.debit);
+                        } else if (d <= end) {
+                            lines.push({ ...t });
+                        }
+                    }
+                });
+
+                lines.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+                let cur = initial;
+                lines.forEach(l => {
+                    if (normal === 'debit') cur += (l.debit - l.kredit);
+                    else cur += (l.kredit - l.debit);
+                    l.runningBalance = cur;
+                });
+
+                return { initial, lines };
+            },
+
+            calculateTrialBalanceTotals() {
+                let dm = 0, km = 0, ds = 0, ks = 0;
+                this.coa.filter(a => a.level >= 2).forEach(acc => {
+                    let balObj = this.getAccountBalance(acc.code, true);
+                    dm += balObj.totalDebit;
+                    km += balObj.totalKredit;
+
+                    let net = this.getAccountBalance(acc.code, false);
+                    if (acc.normal === 'debit') {
+                        if (net >= 0) ds += net; else ks += Math.abs(net);
+                    } else {
+                        if (net >= 0) ks += net; else ds += Math.abs(net);
+                    }
+                });
+                return { debitMutasi: dm, kreditMutasi: km, debitSaldo: ds, kreditSaldo: ks };
+            },
+
+            calculateTotalDepreciationFromJournal() {
+                let sum = 0;
+                this.transactions.forEach(t => {
+                    if (t.account === '5-103') { // Beban penyusutan
+                        let d = new Date(t.date);
+                        if (d >= new Date(this.filterStartDate) && d <= new Date(this.filterEndDate)) {
+                            sum += Number(t.debit || 0);
+                        }
+                    }
+                });
+                return sum;
+            },
+
+            calculateCashFlowOperatingChanges() {
+                let assetsChange = 0;
+                let liabilitiesChange = 0;
+                this.coa.filter(a => a.level >= 2).forEach(acc => {
+                    if (acc.type === 'aset' && acc.code.startsWith('1-1') && acc.code !== '1-101') {
+                        assetsChange -= this.getAccountBalance(acc.code, false); 
+                    }
+                    if (acc.type === 'liabilitas') {
+                        liabilitiesChange += this.getAccountBalance(acc.code, false);
+                    }
+                });
+                return { assets: assetsChange, liabilities: liabilitiesChange };
+            },
+
+            calculateCashFlowInvestment() {
+                let sum = 0;
+                this.coa.filter(a => a.type === 'aset' && !a.code.startsWith('1-1')).forEach(acc => {
+                    sum -= this.getAccountBalance(acc.code, false);
+                });
+                return { val: sum };
+            },
+
+            calculateCashFlowFinancing() {
+                let sum = 0;
+                this.coa.filter(a => a.type === 'ekuitas').forEach(acc => {
+                    sum += this.getAccountBalance(acc.code, false);
+                });
+                return { val: sum };
+            },
+
+            openAddCoaModal() { this.newCoa = { type: 'aset', code: '', name: '', normal: 'debit' }; this.showCoaModal = true; },
+            saveNewAccount() {
+                if(!this.newCoa.code || !this.newCoa.name) { alert("Lengkapi kode dan nama akun!"); return; }
+                if(this.coa.find(a => a.code === this.newCoa.code)) { alert("Kode rekening ini sudah terdaftar!"); return; }
+
+                let dots = (this.newCoa.code.match(/\./g) || []).length;
+                let calculatedLevel = 2 + dots;
+
+                this.coa.push({
+                    code: this.newCoa.code,
+                    name: this.newCoa.name,
+                    type: this.newCoa.type,
+                    normal: this.newCoa.normal,
+                    level: calculatedLevel
+                });
+
+                this.coa.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' }));
+                localStorage.setItem('tripo_custom_coa', JSON.stringify(this.coa));
+                this.showCoaModal = false;
+                alert("Akun perkiraan hilir berhasil ditambahkan.");
+                window._getTripoDataForCloud && window.cloudPush && window.cloudPush(window._getTripoDataForCloud());
+            },
+
+            startEditCoa(acc) { this.editingCoaCode = acc.code; this.editingCoaName = acc.name; },
+            saveCoaName(code) {
+                let target = this.coa.find(a => a.code === code);
+                if (target && this.editingCoaName.trim()) {
+                    target.name = this.editingCoaName.trim();
+                    localStorage.setItem('tripo_custom_coa', JSON.stringify(this.coa));
+                }
+                this.editingCoaCode = null;
+            },
+
+            deleteAccount(code) {
+                let count = this.transactions.filter(t => t.account === code).length;
+                if (count > 0) { alert("Gagal menghapus! Akun ini memiliki log riwayat transaksi terposting."); return; }
+                if (confirm(`Hapus permanen akun perkiraan ${code}?`)) {
+                    this.coa = this.coa.filter(a => a.code !== code);
+                    localStorage.setItem('tripo_custom_coa', JSON.stringify(this.coa));
+                }
+            },
+
+            openAddAssetModal() { this.newAsset = { name: '', cost: 0, life: 4, residual: 0 }; this.showAssetModal = true; },
+            saveFixedAsset() {
+                if(!this.newAsset.name || this.newAsset.cost <= 0) { alert("Lengkapi deskripsi harga aktiva!"); return; }
+                this.fixedAssets.push({
+                    id: 'AST-' + Math.floor(100 + Math.random() * 900),
+                    name: this.newAsset.name,
+                    cost: this.newAsset.cost,
+                    life: this.newAsset.life || 4,
+                    residual: this.newAsset.residual || 0
+                });
+                localStorage.setItem('tripo_fixed_assets', JSON.stringify(this.fixedAssets));
+                this.showAssetModal = false;
+                window._getTripoDataForCloud && window.cloudPush && window.cloudPush(window._getTripoDataForCloud());
+            },
+
+            generateDepreciationJournal(ast) {
+                let annual = (ast.cost - ast.residual) / ast.life;
+                let d = new Date().toISOString().split('T')[0];
+                let vId = 'JU-' + Math.floor(1000 + Math.random() * 9000);
+
+                this.transactions.push({
+                    id: 'TX-' + Math.floor(100000 + Math.random() * 900000), voucherId: vId, date: d, type: 'JU',
+                    description: `Penyusutan Otomatis Tahunan - ${ast.name}`, account: '5-103', debit: annual, kredit: 0
+                });
+                this.transactions.push({
+                    id: 'TX-' + Math.floor(100000 + Math.random() * 900000), voucherId: vId, date: d, type: 'JU',
+                    description: `Penyusutan Otomatis Tahunan - ${ast.name}`, account: '1-203', debit: 0, kredit: annual
+                });
+
+                this.saveToStorage();
+                alert(`Voucher jurnal penyusutan ${ast.name} senilai ${this.formatIDR(annual)} berhasil diposting!`);
+            },
+
+            deleteFixedAsset(id) {
+                if (confirm("Hapus registrasi aset ini dari master data?")) {
+                    this.fixedAssets = this.fixedAssets.filter(a => a.id !== id);
+                    localStorage.setItem('tripo_fixed_assets', JSON.stringify(this.fixedAssets));
+                }
+            },
+
+            closePeriod() {
+                if (!this.selectedPeriodToClose) return;
+                if (!this.closedPeriods.includes(this.selectedPeriodToClose)) {
+                    this.closedPeriods.push(this.selectedPeriodToClose);
+                    localStorage.setItem('tripo_closed_periods', JSON.stringify(this.closedPeriods));
+                    alert(`Periode ${this.selectedPeriodToClose} berhasil dikunci permanen.`);
+                    window._getTripoDataForCloud && window.cloudPush && window.cloudPush(window._getTripoDataForCloud());
+                }
+            },
+
+            openClosedPeriod(p) {
+                this.closedPeriods = this.closedPeriods.filter(m => m !== p);
+                localStorage.setItem('tripo_closed_periods', JSON.stringify(this.closedPeriods));
+                alert(`Kunci akuntansi periode ${p} berhasil dibuka kembali.`);
+                window._getTripoDataForCloud && window.cloudPush && window.cloudPush(window._getTripoDataForCloud());
+            },
+
+            exportPDF(elementId, title) {
+                let element = document.getElementById(elementId);
+                let opt = { margin: 0.5, filename: `${title}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+                html2pdf().set(opt).from(element).save();
+            },
+
+            exportExcel(tableIds, filename) {
+                let wb = XLSX.utils.book_new();
+                tableIds.forEach((id, index) => {
+                    let table = document.getElementById(id);
+                    if (table) {
+                        let ws = XLSX.utils.table_to_sheet(table);
+                        XLSX.utils.book_append_sheet(wb, ws, `Sheet-${index+1}`);
+                    }
+                });
+                XLSX.writeFile(wb, `${filename}.xlsx`);
+            },
+
+            exportDatabaseBackup() {
+                let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                    transactions: this.transactions,
+                    coa: this.coa,
+                    fixedAssets: this.fixedAssets,
+                    closedPeriods: this.closedPeriods,
+                    appName: this.appName
+                }));
+                let dlAnchorElem = document.createElement('a');
+                dlAnchorElem.setAttribute("href", dataStr);
+                dlAnchorElem.setAttribute("download", `Tripo_Database_Backup_${new Date().toISOString().split('T')[0]}.json`);
+                dlAnchorElem.click();
+            },
+
+            restoreDatabaseBackup(e) {
+                let reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        let parsed = JSON.parse(evt.target.result);
+                        if (parsed.transactions || parsed.coa) {
+                            if (parsed.transactions) { this.transactions = parsed.transactions; this.saveToStorage(); }
+                            if (parsed.coa) { this.coa = parsed.coa; localStorage.setItem('tripo_custom_coa', JSON.stringify(this.coa)); }
+                            if (parsed.fixedAssets) { this.fixedAssets = parsed.fixedAssets; localStorage.setItem('tripo_fixed_assets', JSON.stringify(this.fixedAssets)); }
+                            if (parsed.closedPeriods) { this.closedPeriods = parsed.closedPeriods; localStorage.setItem('tripo_closed_periods', JSON.stringify(this.closedPeriods)); }
+                            if (parsed.appName) { this.appName = parsed.appName; }
+                        } else {
+                            alert("Format backup tidak valid!"); return;
+                        }
+                        alert("Database berhasil dipulihkan!");
+                        window.location.reload();
+                    } catch (err) {
+                        alert("Gagal membaca backup: " + err.message);
+                    }
+                };
+                reader.readAsText(e.target.files[0]);
+            },
+
+            resetAppAllData() {
+                if (confirm("Hapus SEMUA data jurnal, aset tetap, dan pengaturan secara permanen? Tindakan tidak dapat dibatalkan!")) {
+                    this.transactions = [];
+                    this.fixedAssets = [];
+                    this.closedPeriods = [];
+                    this.saveToStorage();
+                    localStorage.removeItem('tripo_fixed_assets');
+                    localStorage.removeItem('tripo_closed_periods');
+                    localStorage.removeItem('tripo_custom_coa');
+                    alert("Sistem berhasil dibersihkan total.");
+                    window.location.reload();
+                }
+            }
+        }
+    }
+    </script>
+</body>
+</html>
